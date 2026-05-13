@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 
 namespace OnvifManager.Services;
 
@@ -31,24 +32,24 @@ public static class WsSecurityHelper
         return Convert.ToBase64String(hash);
     }
 
-    public static string BuildSecurityHeader(string username, string password)
+    public static XElement BuildSecurityElement(string username, string password)
     {
         var nonce = GenerateNonce();
         var created = GenerateCreated();
         var digest = ComputePasswordDigest(nonce, created, password);
 
-        return $@"
-    <wsse:Security soap:mustUnderstand=""true"">
-      <wsse:UsernameToken>
-        <wsse:Username>{EscapeXml(username)}</wsse:Username>
-        <wsse:Password Type=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest"">{digest}</wsse:Password>
-        <wsse:Nonce EncodingType=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"">{nonce}</wsse:Nonce>
-        <wsu:Created>{created}</wsu:Created>
-      </wsse:UsernameToken>
-    </wsse:Security>";
+        return new XElement(OnvifXml.WsseNs + "Security",
+            new XAttribute(OnvifXml.S + "mustUnderstand", "true"),
+            new XElement(OnvifXml.WsseNs + "UsernameToken",
+                new XElement(OnvifXml.WsseNs + "Username", username),
+                new XElement(OnvifXml.WsseNs + "Password",
+                    new XAttribute("Type",
+                        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest"),
+                    digest),
+                new XElement(OnvifXml.WsseNs + "Nonce",
+                    new XAttribute("EncodingType",
+                        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"),
+                    nonce),
+                new XElement(OnvifXml.WsuNs + "Created", created)));
     }
-
-    private static string EscapeXml(string value) =>
-        value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")
-             .Replace("\"", "&quot;").Replace("'", "&apos;");
 }

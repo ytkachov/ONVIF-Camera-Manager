@@ -9,39 +9,32 @@ public class MediaService
 
     public MediaService(OnvifClient client) => _client = client;
 
-    public async Task<List<CameraProfile>> GetProfilesAsync()
+    public async Task<List<CameraProfile>> GetProfilesAsync(CancellationToken ct = default)
     {
         var profiles = new List<CameraProfile>();
-        var bodyXml = "<trt:GetProfiles/>";
+        var body = new XElement(OnvifXml.Ttrt + "GetProfiles");
 
-        var xml = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
-            "http://www.onvif.org/ver10/media/wsdl/GetProfiles", bodyXml);
+        var doc = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
+            "http://www.onvif.org/ver10/media/wsdl/GetProfiles", body, ct);
 
-        var body = SoapMessageParser.ParseBody(xml);
-        var response = body.Element(OnvifXml.Ttrt + "GetProfilesResponse")
-            ?? body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetProfilesResponse");
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetProfilesResponse");
         if (response == null) return profiles;
 
-        foreach (var profileEl in response.Elements())
+        foreach (var p in response.Elements().Where(e => e.Name.LocalName == "Profiles"))
         {
-            if (profileEl.Name.LocalName != "Profiles") continue;
-
             var profile = new CameraProfile
             {
-                Token = profileEl.Attribute("token")?.Value ?? "",
-                Name = profileEl.Element(OnvifXml.Tt + "Name")?.Value ?? "",
-                Fixed = ParseBool(profileEl.Attribute("fixed")?.Value, false)
+                Token = p.Attribute("token")?.Value ?? "",
+                Name = LocalValue(p, "Name"),
+                Fixed = ParseBool(p.Attribute("fixed")?.Value, false)
             };
 
-            var vsConfig = profileEl.Element(OnvifXml.Tt + "VideoSourceConfiguration");
+            var vsConfig = p.Elements().FirstOrDefault(e => e.Name.LocalName == "VideoSourceConfiguration");
             if (vsConfig != null)
-            {
-                var vsToken = vsConfig.Element(OnvifXml.Tt + "SourceToken")?.Value;
-                if (!string.IsNullOrEmpty(vsToken))
-                    profile.VideoSourceToken = vsToken;
-            }
+                profile.VideoSourceToken = LocalValue(vsConfig, "SourceToken");
 
-            var veConfig = profileEl.Element(OnvifXml.Tt + "VideoEncoderConfiguration");
+            var veConfig = p.Elements().FirstOrDefault(e => e.Name.LocalName == "VideoEncoderConfiguration");
             if (veConfig != null)
                 profile.VideoEncoderToken = veConfig.Attribute("token")?.Value ?? "";
 
@@ -52,107 +45,25 @@ public class MediaService
         return profiles;
     }
 
-    public async Task<VideoEncoderConfig> GetVideoEncoderConfigurationAsync(string configToken)
-    {
-        var config = new VideoEncoderConfig();
-        var bodyXml = $"<trt:GetVideoEncoderConfiguration><trt:ConfigurationToken>{configToken}</trt:ConfigurationToken></trt:GetVideoEncoderConfiguration>";
-
-        var xml = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
-            "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfiguration", bodyXml);
-
-        var body = SoapMessageParser.ParseBody(xml);
-        var response = body.Element(OnvifXml.Ttrt + "GetVideoEncoderConfigurationResponse")
-            ?? body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetVideoEncoderConfigurationResponse");
-        if (response == null) return config;
-
-        var veConfig = response.Element(OnvifXml.Ttrt + "Configuration")
-            ?? response.Element(OnvifXml.Tt + "Configuration");
-        if (veConfig == null) return config;
-
-        config.Token = veConfig.Attribute("token")?.Value ?? configToken;
-        config.Name = veConfig.Element(OnvifXml.Tt + "Name")?.Value ?? "";
-        config.Encoding = veConfig.Element(OnvifXml.Tt + "Encoding")?.Value ?? "H264";
-        config.UseCount = ParseInt(veConfig.Attribute("UseCount")?.Value, 0);
-
-        var resolution = veConfig.Element(OnvifXml.Tt + "Resolution");
-        if (resolution != null)
-        {
-            config.Width = ParseInt(resolution.Element(OnvifXml.Tt + "Width")?.Value, 1920);
-            config.Height = ParseInt(resolution.Element(OnvifXml.Tt + "Height")?.Value, 1080);
-        }
-
-        var rateControl = veConfig.Element(OnvifXml.Tt + "RateControl");
-        if (rateControl != null)
-        {
-            config.FrameRateLimit = ParseInt(rateControl.Element(OnvifXml.Tt + "FrameRateLimit")?.Value, 30);
-            config.EncodingInterval = ParseInt(rateControl.Element(OnvifXml.Tt + "EncodingInterval")?.Value, 1);
-            config.BitrateLimit = ParseInt(rateControl.Element(OnvifXml.Tt + "BitrateLimit")?.Value, 4096);
-        }
-
-        var h264 = veConfig.Element(OnvifXml.Tt + "H264");
-        if (h264 != null)
-        {
-            config.GovLength = h264.Element(OnvifXml.Tt + "GovLength")?.Value ?? "30";
-            config.H264Profile = h264.Element(OnvifXml.Tt + "H264Profile")?.Value ?? "High";
-        }
-
-        return config;
-    }
-
-    public async Task<List<VideoEncoderConfig>> GetAllVideoEncoderConfigurationsAsync()
+    public async Task<List<VideoEncoderConfig>> GetAllVideoEncoderConfigurationsAsync(CancellationToken ct = default)
     {
         var configs = new List<VideoEncoderConfig>();
-        var bodyXml = "<trt:GetVideoEncoderConfigurations/>";
+        var body = new XElement(OnvifXml.Ttrt + "GetVideoEncoderConfigurations");
 
-        var xml = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
-            "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurations", bodyXml);
+        var doc = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
+            "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurations", body, ct);
 
-        var body = SoapMessageParser.ParseBody(xml);
-        var response = body.Element(OnvifXml.Ttrt + "GetVideoEncoderConfigurationsResponse")
-            ?? body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetVideoEncoderConfigurationsResponse");
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetVideoEncoderConfigurationsResponse");
         if (response == null) return configs;
 
-        foreach (var configEl in response.Elements())
-        {
-            if (configEl.Name.LocalName != "Configurations") continue;
-
-            var config = new VideoEncoderConfig
-            {
-                Token = configEl.Attribute("token")?.Value ?? "",
-                Name = configEl.Element(OnvifXml.Tt + "Name")?.Value ?? "",
-                Encoding = configEl.Element(OnvifXml.Tt + "Encoding")?.Value ?? "H264",
-                UseCount = ParseInt(configEl.Attribute("UseCount")?.Value, 0)
-            };
-
-            var resolution = configEl.Element(OnvifXml.Tt + "Resolution");
-            if (resolution != null)
-            {
-                config.Width = ParseInt(resolution.Element(OnvifXml.Tt + "Width")?.Value, 1920);
-                config.Height = ParseInt(resolution.Element(OnvifXml.Tt + "Height")?.Value, 1080);
-            }
-
-            var rateControl = configEl.Element(OnvifXml.Tt + "RateControl");
-            if (rateControl != null)
-            {
-                config.FrameRateLimit = ParseInt(rateControl.Element(OnvifXml.Tt + "FrameRateLimit")?.Value, 30);
-                config.EncodingInterval = ParseInt(rateControl.Element(OnvifXml.Tt + "EncodingInterval")?.Value, 1);
-                config.BitrateLimit = ParseInt(rateControl.Element(OnvifXml.Tt + "BitrateLimit")?.Value, 4096);
-            }
-
-            var h264 = configEl.Element(OnvifXml.Tt + "H264");
-            if (h264 != null)
-            {
-                config.GovLength = h264.Element(OnvifXml.Tt + "GovLength")?.Value ?? "30";
-                config.H264Profile = h264.Element(OnvifXml.Tt + "H264Profile")?.Value ?? "High";
-            }
-
-            configs.Add(config);
-        }
+        foreach (var cfg in response.Elements().Where(e => e.Name.LocalName == "Configurations"))
+            configs.Add(ReadEncoderConfig(cfg));
 
         return configs;
     }
 
-    public async Task SetVideoEncoderConfigurationAsync(VideoEncoderConfig config)
+    public async Task SetVideoEncoderConfigurationAsync(VideoEncoderConfig config, CancellationToken ct = default)
     {
         var quality = config.Quality switch
         {
@@ -162,68 +73,95 @@ public class MediaService
             _ => "CBR"
         };
 
-        var bodyXml = $@"
-<trt:SetVideoEncoderConfiguration>
-  <trt:Configuration token=""{config.Token}"">
-    <tt:Name>{config.Name}</tt:Name>
-    <tt:UseCount>{config.UseCount}</tt:UseCount>
-    <tt:Encoding>{config.Encoding}</tt:Encoding>
-    <tt:Resolution>
-      <tt:Width>{config.Width}</tt:Width>
-      <tt:Height>{config.Height}</tt:Height>
-    </tt:Resolution>
-    <tt:Quality>{quality}</tt:Quality>
-    <tt:RateControl>
-      <tt:FrameRateLimit>{config.FrameRateLimit}</tt:FrameRateLimit>
-      <tt:EncodingInterval>{config.EncodingInterval}</tt:EncodingInterval>
-      <tt:BitrateLimit>{config.BitrateLimit}</tt:BitrateLimit>
-    </tt:RateControl>
-    <tt:H264>
-      <tt:GovLength>{config.GovLength}</tt:GovLength>
-      <tt:H264Profile>{config.H264Profile}</tt:H264Profile>
-    </tt:H264>
-    <tt:Multicast>
-      <tt:Address>
-        <tt:Type>IPv4</tt:Type>
-        <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
-      </tt:Address>
-      <tt:Port>0</tt:Port>
-      <tt:TTL>0</tt:TTL>
-      <tt:AutoStart>false</tt:AutoStart>
-    </tt:Multicast>
-    <tt:SessionTimeout>PT0S</tt:SessionTimeout>
-  </trt:Configuration>
-</trt:SetVideoEncoderConfiguration>";
+        var body = new XElement(OnvifXml.Ttrt + "SetVideoEncoderConfiguration",
+            new XElement(OnvifXml.Ttrt + "Configuration",
+                new XAttribute("token", config.Token),
+                new XElement(OnvifXml.Tt + "Name", config.Name),
+                new XElement(OnvifXml.Tt + "UseCount", config.UseCount),
+                new XElement(OnvifXml.Tt + "Encoding", config.Encoding),
+                new XElement(OnvifXml.Tt + "Resolution",
+                    new XElement(OnvifXml.Tt + "Width", config.Width),
+                    new XElement(OnvifXml.Tt + "Height", config.Height)),
+                new XElement(OnvifXml.Tt + "Quality", quality),
+                new XElement(OnvifXml.Tt + "RateControl",
+                    new XElement(OnvifXml.Tt + "FrameRateLimit", config.FrameRateLimit),
+                    new XElement(OnvifXml.Tt + "EncodingInterval", config.EncodingInterval),
+                    new XElement(OnvifXml.Tt + "BitrateLimit", config.BitrateLimit)),
+                new XElement(OnvifXml.Tt + "H264",
+                    new XElement(OnvifXml.Tt + "GovLength", config.GovLength),
+                    new XElement(OnvifXml.Tt + "H264Profile", config.H264Profile)),
+                new XElement(OnvifXml.Tt + "Multicast",
+                    new XElement(OnvifXml.Tt + "Address",
+                        new XElement(OnvifXml.Tt + "Type", "IPv4"),
+                        new XElement(OnvifXml.Tt + "IPv4Address", "0.0.0.0")),
+                    new XElement(OnvifXml.Tt + "Port", "0"),
+                    new XElement(OnvifXml.Tt + "TTL", "0"),
+                    new XElement(OnvifXml.Tt + "AutoStart", "false")),
+                new XElement(OnvifXml.Tt + "SessionTimeout", "PT0S")),
+            new XElement(OnvifXml.Ttrt + "ForcePersistence", "true"));
 
         await _client.SendSoapAsync(OnvifXml.MediaServicePath,
-            "http://www.onvif.org/ver10/media/wsdl/SetVideoEncoderConfiguration", bodyXml);
+            "http://www.onvif.org/ver10/media/wsdl/SetVideoEncoderConfiguration", body, ct);
     }
 
-    public async Task<string> GetStreamUriAsync(string profileToken, string protocol = "RTSP")
+    public async Task<string> GetStreamUriAsync(string profileToken, string protocol = "RTSP",
+        CancellationToken ct = default)
     {
-        var bodyXml = $@"
-<trt:GetStreamUri>
-  <trt:StreamSetup>
-    <tt:Stream>RTP-Unicast</tt:Stream>
-    <tt:Transport>
-      <tt:Protocol>{protocol}</tt:Protocol>
-    </tt:Transport>
-  </trt:StreamSetup>
-  <trt:ProfileToken>{profileToken}</trt:ProfileToken>
-</trt:GetStreamUri>";
+        var body = new XElement(OnvifXml.Ttrt + "GetStreamUri",
+            new XElement(OnvifXml.Ttrt + "StreamSetup",
+                new XElement(OnvifXml.Tt + "Stream", "RTP-Unicast"),
+                new XElement(OnvifXml.Tt + "Transport",
+                    new XElement(OnvifXml.Tt + "Protocol", protocol))),
+            new XElement(OnvifXml.Ttrt + "ProfileToken", profileToken));
 
-        var xml = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
-            "http://www.onvif.org/ver10/media/wsdl/GetStreamUri", bodyXml);
+        var doc = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
+            "http://www.onvif.org/ver10/media/wsdl/GetStreamUri", body, ct);
 
-        var body = SoapMessageParser.ParseBody(xml);
-        var response = body.Element(OnvifXml.Ttrt + "GetStreamUriResponse")
-            ?? body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetStreamUriResponse");
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetStreamUriResponse");
         if (response == null) return "";
 
-        return response.Element(OnvifXml.Ttrt + "MediaUri")?.Element(OnvifXml.Tt + "Uri")?.Value
-            ?? response.Elements().FirstOrDefault(e => e.Name.LocalName == "MediaUri")
-                ?.Element(OnvifXml.Tt + "Uri")?.Value ?? "";
+        var mediaUri = response.Elements().FirstOrDefault(e => e.Name.LocalName == "MediaUri");
+        return mediaUri?.Elements().FirstOrDefault(e => e.Name.LocalName == "Uri")?.Value ?? "";
     }
+
+    private static VideoEncoderConfig ReadEncoderConfig(XElement cfg)
+    {
+        var config = new VideoEncoderConfig
+        {
+            Token = cfg.Attribute("token")?.Value ?? "",
+            Name = LocalValue(cfg, "Name"),
+            Encoding = string.IsNullOrEmpty(LocalValue(cfg, "Encoding")) ? "H264" : LocalValue(cfg, "Encoding"),
+            UseCount = ParseInt(cfg.Attribute("UseCount")?.Value, 0)
+        };
+
+        var resolution = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "Resolution");
+        if (resolution != null)
+        {
+            config.Width = ParseInt(LocalValue(resolution, "Width"), 1920);
+            config.Height = ParseInt(LocalValue(resolution, "Height"), 1080);
+        }
+
+        var rateControl = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "RateControl");
+        if (rateControl != null)
+        {
+            config.FrameRateLimit = ParseInt(LocalValue(rateControl, "FrameRateLimit"), 30);
+            config.EncodingInterval = ParseInt(LocalValue(rateControl, "EncodingInterval"), 1);
+            config.BitrateLimit = ParseInt(LocalValue(rateControl, "BitrateLimit"), 4096);
+        }
+
+        var h264 = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "H264");
+        if (h264 != null)
+        {
+            config.GovLength = string.IsNullOrEmpty(LocalValue(h264, "GovLength")) ? "30" : LocalValue(h264, "GovLength");
+            config.H264Profile = string.IsNullOrEmpty(LocalValue(h264, "H264Profile")) ? "High" : LocalValue(h264, "H264Profile");
+        }
+
+        return config;
+    }
+
+    private static string LocalValue(XElement parent, string localName) =>
+        parent.Elements().FirstOrDefault(e => e.Name.LocalName == localName)?.Value ?? "";
 
     private static int ParseInt(string? val, int def) =>
         int.TryParse(val, out var r) ? r : def;

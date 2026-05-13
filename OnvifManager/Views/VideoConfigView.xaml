@@ -3,39 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:conv="clr-namespace:OnvifManager.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
-
-    <UserControl.Resources>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
-        <conv:InverseBoolConverter x:Key="InverseBool"/>
-
-        <Style x:Key="FormLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#FF999999"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="0,0,16,0"/>
-        </Style>
-
-        <Style x:Key="FormInput" TargetType="TextBox">
-            <Setter Property="Background" Value="#FF333337"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF555555"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <Style x:Key="FormCombo" TargetType="ComboBox">
-            <Setter Property="Background" Value="#FF333337"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF555555"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="FontSize" Value="13"/>
-        </Style>
-    </UserControl.Resources>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -44,29 +13,28 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Video Configuration" FontSize="22" FontWeight="Bold" Foreground="White"/>
-            <TextBlock Text="{Binding StatusText}" Foreground="#FF999999" FontSize="13" Margin="0,4,0,0"/>
+            <TextBlock Text="Video Configuration" Style="{StaticResource H1}"/>
+            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}"
+                       Margin="0,4,0,0"/>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- Encoder Selection -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Encoder Selection" FontSize="16" FontWeight="Bold"
-                                   Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="Encoder Selection" Style="{StaticResource H2}"
+                                   Margin="0,0,0,12"/>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Profile:" Style="{StaticResource FormLabel}"/>
                             <ComboBox Grid.Column="1" ItemsSource="{Binding Profiles}"
                                       SelectedItem="{Binding SelectedProfile}"
-                                      DisplayMemberPath="Name"
-                                      Style="{StaticResource FormCombo}"/>
+                                      DisplayMemberPath="Name"/>
                         </Grid>
 
                         <Grid Margin="0,12,0,0">
@@ -74,31 +42,27 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Encoder:" Style="{StaticResource FormLabel}"/>
                             <ComboBox Grid.Column="1" ItemsSource="{Binding EncoderConfigs}"
                                       SelectedItem="{Binding SelectedEncoder}"
-                                      DisplayMemberPath="Name"
-                                      Style="{StaticResource FormCombo}"/>
+                                      DisplayMemberPath="Name"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- Video Settings -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Video Settings" FontSize="16" FontWeight="Bold"
-                                   Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="Video Settings" Style="{StaticResource H2}"
+                                   Margin="0,0,0,12"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Encoding:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" Text="{Binding Encoding}"
-                                      IsEditable="True" Style="{StaticResource FormCombo}">
+                            <ComboBox Grid.Column="1" Text="{Binding Encoding}" IsEditable="True">
                                 <ComboBoxItem Content="H264"/>
                                 <ComboBoxItem Content="H265"/>
                                 <ComboBoxItem Content="JPEG"/>
@@ -111,10 +75,8 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="H.264 Profile:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" Text="{Binding H264Profile}"
-                                      IsEditable="True" Style="{StaticResource FormCombo}">
+                            <ComboBox Grid.Column="1" Text="{Binding H264Profile}" IsEditable="True">
                                 <ComboBoxItem Content="Baseline"/>
                                 <ComboBoxItem Content="Main"/>
                                 <ComboBoxItem Content="High"/>
@@ -126,9 +88,8 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="GOV Length:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding GovLength}" Style="{StaticResource FormInput}"/>
+                            <TextBox Grid.Column="1" Text="{Binding GovLength}"/>
                         </Grid>
 
                         <Grid Margin="0,8">
@@ -136,10 +97,8 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Quality:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" SelectedIndex="{Binding Quality}"
-                                      Style="{StaticResource FormCombo}">
+                            <ComboBox Grid.Column="1" SelectedIndex="{Binding Quality}">
                                 <ComboBoxItem Content="CBR (Constant Bitrate)"/>
                                 <ComboBoxItem Content="VBR (Variable Bitrate)"/>
                                 <ComboBoxItem Content="CQ (Constant Quality)"/>
@@ -149,10 +108,10 @@
                 </Border>
 
                 <!-- Resolution & Rate -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Resolution &amp; Rate" FontSize="16" FontWeight="Bold"
-                                   Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="Resolution &amp; Rate" Style="{StaticResource H2}"
+                                   Margin="0,0,0,12"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
@@ -161,13 +120,10 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Width:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding Width}"
-                                     Style="{StaticResource FormInput}" Margin="0,0,16,0"/>
-
+                            <TextBox Grid.Column="1" Text="{Binding Width}" Margin="0,0,16,0"/>
                             <TextBlock Grid.Column="2" Text="Height:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="3" Text="{Binding Height}" Style="{StaticResource FormInput}"/>
+                            <TextBox Grid.Column="3" Text="{Binding Height}"/>
                         </Grid>
 
                         <Grid Margin="0,8">
@@ -177,13 +133,10 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Frame Rate Limit:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding FrameRateLimit}"
-                                     Style="{StaticResource FormInput}" Margin="0,0,16,0"/>
-
+                            <TextBox Grid.Column="1" Text="{Binding FrameRateLimit}" Margin="0,0,16,0"/>
                             <TextBlock Grid.Column="2" Text="Enc. Interval:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="3" Text="{Binding EncodingInterval}" Style="{StaticResource FormInput}"/>
+                            <TextBox Grid.Column="3" Text="{Binding EncodingInterval}"/>
                         </Grid>
 
                         <Grid Margin="0,8">
@@ -193,14 +146,10 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Bitrate (kbps):" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding BitrateLimit}"
-                                     Style="{StaticResource FormInput}" Margin="0,0,16,0"/>
-
+                            <TextBox Grid.Column="1" Text="{Binding BitrateLimit}" Margin="0,0,16,0"/>
                             <TextBlock Grid.Column="2" Text="Stream URI:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="3" Text="{Binding StreamUri}"
-                                     Style="{StaticResource FormInput}" IsReadOnly="True"/>
+                            <TextBox Grid.Column="3" Text="{Binding StreamUri}" IsReadOnly="True"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -208,15 +157,7 @@
                 <!-- Buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                     <Button Content="Save Configuration" Command="{Binding SaveCommand}"
-                            Background="#FF0078D4" Foreground="White"
-                            BorderThickness="0" FontSize="14" FontWeight="SemiBold"
-                            Padding="24,10" Margin="0,0,12,0" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="6"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            Style="{StaticResource AccentButton}"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

@@ -3,32 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:conv="clr-namespace:OnvifManager.Converters"
+             xmlns:helpers="clr-namespace:OnvifManager.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="800">
-
-    <UserControl.Resources>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
-        <conv:InverseBoolConverter x:Key="InverseBool"/>
-
-        <Style x:Key="CompactInput" TargetType="TextBox">
-            <Setter Property="Background" Value="#FF333337"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF555555"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,3"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-
-        <Style x:Key="CompactCombo" TargetType="ComboBox">
-            <Setter Property="Background" Value="#FF333337"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF555555"/>
-            <Setter Property="Padding" Value="6,3"/>
-            <Setter Property="FontSize" Value="12"/>
-        </Style>
-    </UserControl.Resources>
 
     <Grid Margin="8,8,8,4">
         <Grid.RowDefinitions>
@@ -37,7 +14,8 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar: scan + manual add -->
-        <Border Grid.Row="0" Background="#FF252526" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+        <Border Grid.Row="0" Background="{StaticResource BgSurface}"
+                CornerRadius="6" Padding="10" Margin="0,0,0,6">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -45,141 +23,87 @@
                 </Grid.RowDefinitions>
 
                 <!-- Row 0: Scan controls -->
-                <Grid Grid.Row="0" Margin="0,0,0,4">
+                <Grid Grid.Row="0" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="130"/>
+                        <ColumnDefinition Width="220"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="Network:" Foreground="#FF999999" FontSize="12"
-                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Network:" Style="{StaticResource FormLabel}"
+                               Margin="0,0,8,0"/>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding NetworkInterfaces}"
                               SelectedItem="{Binding SelectedNetworkInterface}"
-                              Style="{StaticResource CompactCombo}" MaxDropDownHeight="200"/>
+                              MaxDropDownHeight="240"/>
 
                     <Button Grid.Column="2" Content="Scan"
                             Command="{Binding ScanCommand}"
-                            Background="#FF0078D4" Foreground="White"
-                            BorderThickness="0" FontSize="12" FontWeight="SemiBold"
-                            Padding="16,5" Margin="8,0,0,0" Cursor="Hand"
-                            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="4"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            Style="{StaticResource AccentButton}"
+                            Margin="8,0,0,0"
+                            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}"/>
 
-                    <Button Grid.Column="4" Content="X Remove"
+                    <Button Grid.Column="4" Content="Remove"
                             Command="{Binding RemoveCameraCommand}"
-                            Background="#FF553333" Foreground="White"
-                            BorderThickness="0" FontSize="11"
-                            Padding="12,5" Margin="4,0,0,0" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="4"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            Style="{StaticResource DangerButton}"/>
                 </Grid>
 
                 <!-- Row 1: Manual add controls -->
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="130"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="50"/>
+                        <ColumnDefinition Width="60"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="Manual add:" Foreground="#FF999999" FontSize="12"
-                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Manual add:" Style="{StaticResource FormLabel}"
+                               Margin="0,0,8,0"/>
 
                     <TextBox Grid.Column="1" Text="{Binding ManualIp, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource CompactInput}" ToolTip="IP Address"/>
+                             ToolTip="IP Address"/>
 
-                    <TextBlock Grid.Column="2" Text=":" Foreground="White" FontSize="12"
-                               VerticalAlignment="Center" Margin="2,0"/>
+                    <TextBlock Grid.Column="2" Text=":" Style="{StaticResource FormLabel}"
+                               Margin="4,0"/>
 
                     <TextBox Grid.Column="3" Text="{Binding ManualPort, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource CompactInput}" ToolTip="Port"/>
+                             ToolTip="Port"/>
+
+                    <TextBlock Grid.Column="4" Text="User:" Style="{StaticResource FormLabel}"
+                               Margin="12,0,8,0"/>
 
                     <TextBox Grid.Column="5" Text="{Binding ManualUsername, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource CompactInput}" ToolTip="Username"/>
+                             ToolTip="Username"/>
 
-                    <PasswordBox Grid.Column="7" x:Name="ManualPasswordBox"
-                                 Background="#FF333337" Foreground="White"
-                                 BorderBrush="#FF555555" BorderThickness="1"
-                                 Padding="6,4" FontSize="12"
-                                 ToolTip="Password" PasswordChar="*"/>
+                    <TextBlock Grid.Column="6" Text="Pass:" Style="{StaticResource FormLabel}"
+                               Margin="12,0,8,0"/>
 
-                    <Button Grid.Column="8" Content="+ Add"
+                    <PasswordBox Grid.Column="7"
+                                 helpers:PasswordBoxHelper.BindPassword="True"
+                                 helpers:PasswordBoxHelper.BoundPassword="{Binding ManualPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Password"/>
+
+                    <Button Grid.Column="8" Content="Add"
                             Command="{Binding AddManualCommand}"
-                            Background="#FF2D7D46" Foreground="White"
-                            BorderThickness="0" FontSize="12" FontWeight="SemiBold"
-                            Padding="12,5" Margin="4,0,0,0" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="4"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            Style="{StaticResource SuccessButton}"
+                            Margin="8,0,0,0"/>
                 </Grid>
             </Grid>
         </Border>
 
         <!-- Camera list -->
         <DataGrid Grid.Row="1" ItemsSource="{Binding Cameras}"
-                  SelectedItem="{Binding SelectedCamera}"
-                  AutoGenerateColumns="False"
-                  Background="#FF252526" Foreground="White"
-                  RowBackground="#FF2D2D30" BorderBrush="#FF3E3E42"
-                  HeadersVisibility="Column" IsReadOnly="True"
-                  SelectionMode="Single" GridLinesVisibility="Horizontal"
-                  HorizontalGridLinesBrush="#FF3E3E42"
-                  CanUserAddRows="False" CanUserDeleteRows="False"
-                  FontSize="12">
-            <DataGrid.Resources>
-                <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="#FF333337"/>
-                    <Setter Property="Foreground" Value="#FFCCCCCC"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="FontSize" Value="11"/>
-                    <Setter Property="Padding" Value="8,5"/>
-                    <Setter Property="BorderBrush" Value="#FF3E3E42"/>
-                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                </Style>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="FontSize" Value="12"/>
-                    <Setter Property="Padding" Value="8,4"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                </Style>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="#FF2D2D30"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="#FF0078D4"/>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#FF3E3E42"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </DataGrid.Resources>
+                  SelectedItem="{Binding SelectedCamera}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="160"/>
                 <DataGridTextColumn Header="IP Address" Binding="{Binding IpAddress}" Width="130"/>
-                <DataGridTextColumn Header="Endpoint" Binding="{Binding Endpoint}" Width="160"/>
+                <DataGridTextColumn Header="Endpoint" Binding="{Binding Endpoint}" Width="180"/>
                 <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer}" Width="120"/>
                 <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="120"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding StatusMessage}" Width="*"/>

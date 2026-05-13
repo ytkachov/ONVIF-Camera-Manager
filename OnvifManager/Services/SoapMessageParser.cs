@@ -1,38 +1,45 @@
+using System.IO;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace OnvifManager.Services;
 
 public static class SoapMessageParser
 {
-    public static XElement ParseBody(string soapXml)
+    private static readonly XmlReaderSettings ReaderSettings = new()
     {
-        var doc = XDocument.Parse(soapXml);
+        DtdProcessing = DtdProcessing.Ignore,
+        IgnoreComments = true,
+        CloseInput = false
+    };
+
+    public static XDocument LoadDocument(Stream stream)
+    {
+        using var reader = XmlReader.Create(stream, ReaderSettings);
+        return XDocument.Load(reader);
+    }
+
+    public static XDocument LoadDocument(byte[] bytes)
+    {
+        using var ms = new MemoryStream(bytes);
+        return LoadDocument(ms);
+    }
+
+    public static XElement ParseBody(XDocument doc)
+    {
         var body = doc.Root?.Element(OnvifXml.S + "Body");
         if (body == null)
             throw new InvalidOperationException("SOAP response has no Body element");
 
-        if (body.Elements().FirstOrDefault() is { } fault && fault.Name.LocalName == "Fault")
+        var fault = body.Elements().FirstOrDefault(e => e.Name.LocalName == "Fault");
+        if (fault != null)
         {
-            var reason = fault.Descendants().FirstOrDefault(e => e.Name.LocalName == "Text")?.Value ?? "Unknown fault";
+            var reason = fault.Descendants().FirstOrDefault(e => e.Name.LocalName == "Text")?.Value
+                         ?? "Unknown fault";
             throw new OnvifFaultException(reason);
         }
 
         return body;
-    }
-
-    public static XElement? ParseElement(string soapXml, string elementName)
-    {
-        var body = ParseBody(soapXml);
-        return body.Elements().FirstOrDefault(e => e.Name.LocalName == elementName);
-    }
-
-    public static string? GetElementValue(string soapXml, string elementName, string? childElementName = null)
-    {
-        var el = ParseElement(soapXml, elementName);
-        if (el == null) return null;
-        if (childElementName != null)
-            return el.Element(el.Name.Namespace + childElementName)?.Value ?? el.Element(childElementName)?.Value;
-        return el.Value;
     }
 }
 

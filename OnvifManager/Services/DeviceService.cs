@@ -9,64 +9,52 @@ public class DeviceService
 
     public DeviceService(OnvifClient client) => _client = client;
 
-    public async Task GetDeviceInformationAsync()
+    public async Task GetDeviceInformationAsync(CancellationToken ct = default)
     {
-        var bodyXml = "<tds:GetDeviceInformation/>";
-        var xml = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
-            "http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation", bodyXml);
+        var body = new XElement(OnvifXml.Ttds + "GetDeviceInformation");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation", body, ct);
 
-        var body = SoapMessageParser.ParseBody(xml);
-        var info = body.Element(OnvifXml.Ttds + "GetDeviceInformationResponse");
-        if (info == null) info = body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetDeviceInformationResponse");
-        if (info == null) return;
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetDeviceInformationResponse");
+        if (response == null) return;
 
-        _client.Camera.Manufacturer = info.Element(OnvifXml.Ttds + "Manufacturer")?.Value
-            ?? info.Element(OnvifXml.Tt + "Manufacturer")?.Value ?? "";
-        _client.Camera.Model = info.Element(OnvifXml.Ttds + "Model")?.Value
-            ?? info.Element(OnvifXml.Tt + "Model")?.Value ?? "";
-        _client.Camera.FirmwareVersion = info.Element(OnvifXml.Ttds + "FirmwareVersion")?.Value
-            ?? info.Element(OnvifXml.Tt + "FirmwareVersion")?.Value ?? "";
-        _client.Camera.SerialNumber = info.Element(OnvifXml.Ttds + "SerialNumber")?.Value
-            ?? info.Element(OnvifXml.Tt + "SerialNumber")?.Value ?? "";
-        _client.Camera.HardwareId = info.Element(OnvifXml.Ttds + "HardwareId")?.Value
-            ?? info.Element(OnvifXml.Tt + "HardwareId")?.Value ?? "";
+        _client.Camera.Manufacturer = LocalValue(response, "Manufacturer");
+        _client.Camera.Model = LocalValue(response, "Model");
+        _client.Camera.FirmwareVersion = LocalValue(response, "FirmwareVersion");
+        _client.Camera.SerialNumber = LocalValue(response, "SerialNumber");
+        _client.Camera.HardwareId = LocalValue(response, "HardwareId");
 
         _client.Camera.IsConnected = true;
         _client.Camera.StatusMessage = "Connected";
     }
 
-    public async Task<List<OnvifServiceUri>> GetServicesAsync()
+    public async Task<List<OnvifServiceUri>> GetServicesAsync(CancellationToken ct = default)
     {
         var services = new List<OnvifServiceUri>();
-        var bodyXml = "<tds:GetServices><tds:IncludeCapability>true</tds:IncludeCapability></tds:GetServices>";
+        var body = new XElement(OnvifXml.Ttds + "GetServices",
+            new XElement(OnvifXml.Ttds + "IncludeCapability", "true"));
 
         try
         {
-            var xml = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
-                "http://www.onvif.org/ver10/device/wsdl/GetServices", bodyXml);
+            var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+                "http://www.onvif.org/ver10/device/wsdl/GetServices", body, ct);
 
-            var body = SoapMessageParser.ParseBody(xml);
-            var response = body.Element(OnvifXml.Ttds + "GetServicesResponse")
-                ?? body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetServicesResponse");
+            var response = SoapMessageParser.ParseBody(doc)
+                .Elements().FirstOrDefault(e => e.Name.LocalName == "GetServicesResponse");
             if (response == null) return services;
 
-            foreach (var svcEl in response.Elements())
+            foreach (var svc in response.Elements().Where(e => e.Name.LocalName == "Service"))
             {
-                if (svcEl.Name.LocalName != "Service") continue;
-
-                var ns = svcEl.Element(OnvifXml.Ttds + "Namespace")?.Value
-                    ?? svcEl.Element(OnvifXml.Tt + "Namespace")?.Value ?? "";
-                var uri = svcEl.Element(OnvifXml.Ttds + "XAddr")?.Value
-                    ?? svcEl.Element(OnvifXml.Tt + "XAddr")?.Value ?? "";
-
                 services.Add(new OnvifServiceUri
                 {
-                    Namespace = ns,
-                    Uri = uri,
+                    Namespace = LocalValue(svc, "Namespace"),
+                    Uri = LocalValue(svc, "XAddr"),
                     Version = ""
                 });
             }
         }
+        catch (OperationCanceledException) { throw; }
         catch
         {
             // GetServices is optional on some cameras
@@ -76,60 +64,57 @@ public class DeviceService
         return services;
     }
 
-    public async Task<List<NetworkInterfaceInfo>> GetNetworkInterfacesAsync()
+    public async Task<List<NetworkInterfaceInfo>> GetNetworkInterfacesAsync(CancellationToken ct = default)
     {
         var interfaces = new List<NetworkInterfaceInfo>();
-        var bodyXml = "<tds:GetNetworkInterfaces/>";
+        var body = new XElement(OnvifXml.Ttds + "GetNetworkInterfaces");
 
-        var xml = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
-            "http://www.onvif.org/ver10/device/wsdl/GetNetworkInterfaces", bodyXml);
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetNetworkInterfaces", body, ct);
 
-        var body = SoapMessageParser.ParseBody(xml);
-        var response = body.Element(OnvifXml.Ttds + "GetNetworkInterfacesResponse")
-            ?? body.Elements().FirstOrDefault(e => e.Name.LocalName == "GetNetworkInterfacesResponse");
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetNetworkInterfacesResponse");
         if (response == null) return interfaces;
 
-        foreach (var ifaceEl in response.Elements())
+        foreach (var iface in response.Elements().Where(e => e.Name.LocalName == "NetworkInterfaces"))
         {
-            if (ifaceEl.Name.LocalName != "NetworkInterfaces") continue;
-
             var ni = new NetworkInterfaceInfo
             {
-                Token = ifaceEl.Attribute("token")?.Value ?? "",
-                Enabled = ParseBool(ifaceEl.Element(OnvifXml.Tt + "Enabled")?.Value, true),
-                HwAddress = ifaceEl.Element(OnvifXml.Tt + "HwAddress")?.Value ?? "",
-                Mtu = ParseInt(ifaceEl.Element(OnvifXml.Tt + "MTU")?.Value, 1500)
+                Token = iface.Attribute("token")?.Value ?? "",
+                Enabled = ParseBool(LocalValue(iface, "Enabled"), true),
+                HwAddress = LocalValue(iface, "HwAddress"),
+                Mtu = ParseInt(LocalValue(iface, "MTU"), 1500)
             };
 
-            var ipv4 = ifaceEl.Element(OnvifXml.Tt + "IPv4");
+            var ipv4 = iface.Elements().FirstOrDefault(e => e.Name.LocalName == "IPv4");
             if (ipv4 != null)
             {
-                ni.IPv4Enabled = ParseBool(ipv4.Element(OnvifXml.Tt + "Enabled")?.Value, true);
-                ni.IPv4Dhcp = ParseBool(ipv4.Element(OnvifXml.Tt + "DHCP")?.Value, true);
+                var cfg = ipv4.Elements().FirstOrDefault(e => e.Name.LocalName == "Config") ?? ipv4;
+                ni.IPv4Enabled = ParseBool(LocalValue(ipv4, "Enabled"), true);
+                ni.IPv4Dhcp = ParseBool(LocalValue(cfg, "DHCP"), true);
 
-                var manual = ipv4.Element(OnvifXml.Tt + "Manual");
+                var manual = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "Manual");
                 if (manual != null)
                 {
-                    ni.IPv4Address = manual.Element(OnvifXml.Tt + "Address")?.Value ?? "";
-                    ni.IPv4PrefixLength = ParseInt(manual.Element(OnvifXml.Tt + "PrefixLength")?.Value, 24);
+                    ni.IPv4Address = LocalValue(manual, "Address");
+                    ni.IPv4PrefixLength = ParseInt(LocalValue(manual, "PrefixLength"), 24);
                 }
 
-                var fromDhcp = ipv4.Element(OnvifXml.Tt + "FromDHCP");
+                var fromDhcp = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "FromDHCP");
                 if (fromDhcp != null && string.IsNullOrEmpty(ni.IPv4Address))
                 {
-                    ni.IPv4Address = fromDhcp.Element(OnvifXml.Tt + "Address")?.Value ?? "";
-                    ni.IPv4PrefixLength = ParseInt(fromDhcp.Element(OnvifXml.Tt + "PrefixLength")?.Value, 24);
+                    ni.IPv4Address = LocalValue(fromDhcp, "Address");
+                    ni.IPv4PrefixLength = ParseInt(LocalValue(fromDhcp, "PrefixLength"), 24);
                 }
             }
 
-            var dns = ifaceEl.Element(OnvifXml.Tt + "DNS");
+            var dns = iface.Elements().FirstOrDefault(e => e.Name.LocalName == "DNS");
             if (dns != null)
             {
-                foreach (var dnsEntry in dns.Elements(OnvifXml.Tt + "DNSManual"))
-                {
-                    foreach (var addr in dnsEntry.Elements(OnvifXml.Tt + "IPv4Address"))
-                        if (!string.IsNullOrEmpty(addr.Value)) ni.DnsServers.Add(addr.Value);
-                }
+                foreach (var dnsManual in dns.Elements().Where(e => e.Name.LocalName == "DNSManual"))
+                foreach (var addr in dnsManual.Elements().Where(e => e.Name.LocalName == "IPv4Address"))
+                    if (!string.IsNullOrEmpty(addr.Value))
+                        ni.DnsServers.Add(addr.Value);
             }
 
             interfaces.Add(ni);
@@ -138,28 +123,26 @@ public class DeviceService
         return interfaces;
     }
 
-    public async Task SetNetworkInterfacesAsync(NetworkInterfaceInfo ni)
+    public async Task SetNetworkInterfacesAsync(NetworkInterfaceInfo ni, CancellationToken ct = default)
     {
-        var dhcp = ni.IPv4Dhcp ? "true" : "false";
-        var bodyXml = $@"
-<tds:SetNetworkInterfaces>
-  <tds:NetworkInterface token=""{ni.Token}"">
-    <tt:Enabled>{BoolStr(ni.Enabled)}</tt:Enabled>
-    <tt:IPv4>
-      <tt:Enabled>{BoolStr(ni.IPv4Enabled)}</tt:Enabled>
-      <tt:Manual>
-        <tt:Address>{ni.IPv4Address}</tt:Address>
-        <tt:PrefixLength>{ni.IPv4PrefixLength}</tt:PrefixLength>
-      </tt:Manual>
-      <tt:DHCP>{dhcp}</tt:DHCP>
-    </tt:IPv4>
-    <tt:MTU>{ni.Mtu}</tt:MTU>
-  </tds:NetworkInterface>
-</tds:SetNetworkInterfaces>";
+        var body = new XElement(OnvifXml.Ttds + "SetNetworkInterfaces",
+            new XElement(OnvifXml.Ttds + "InterfaceToken", ni.Token),
+            new XElement(OnvifXml.Ttds + "NetworkInterface",
+                new XElement(OnvifXml.Tt + "Enabled", BoolStr(ni.Enabled)),
+                new XElement(OnvifXml.Tt + "IPv4",
+                    new XElement(OnvifXml.Tt + "Enabled", BoolStr(ni.IPv4Enabled)),
+                    new XElement(OnvifXml.Tt + "Manual",
+                        new XElement(OnvifXml.Tt + "Address", ni.IPv4Address),
+                        new XElement(OnvifXml.Tt + "PrefixLength", ni.IPv4PrefixLength)),
+                    new XElement(OnvifXml.Tt + "DHCP", BoolStr(ni.IPv4Dhcp))),
+                new XElement(OnvifXml.Tt + "MTU", ni.Mtu)));
 
         await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
-            "http://www.onvif.org/ver10/device/wsdl/SetNetworkInterfaces", bodyXml);
+            "http://www.onvif.org/ver10/device/wsdl/SetNetworkInterfaces", body, ct);
     }
+
+    private static string LocalValue(XElement parent, string localName) =>
+        parent.Elements().FirstOrDefault(e => e.Name.LocalName == localName)?.Value ?? "";
 
     private static bool ParseBool(string? val, bool def) =>
         bool.TryParse(val, out var r) ? r : def;

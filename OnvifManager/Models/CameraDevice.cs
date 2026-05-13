@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace OnvifManager.Models;
 
 public class CameraDevice
@@ -13,7 +15,10 @@ public class CameraDevice
     public string IpAddress { get; set; } = string.Empty;
     public int Port { get; set; } = 80;
     public string Username { get; set; } = "admin";
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public string Password { get; set; } = string.Empty;
+
     public List<CameraProfile> Profiles { get; set; } = new();
     public List<OnvifServiceUri> Services { get; set; } = new();
     public bool IsDiscovered { get; set; }
@@ -23,4 +28,7 @@ public class CameraDevice
 
     public string DisplayLabel => string.IsNullOrEmpty(Name)
         ? $"{IpAddress}:{Port}" : $"{Name} ({IpAddress})";
+
+    public override string ToString() =>
+        $"{(string.IsNullOrEmpty(Name) ? "(unnamed)" : Name)} {IpAddress}:{Port}";
 }

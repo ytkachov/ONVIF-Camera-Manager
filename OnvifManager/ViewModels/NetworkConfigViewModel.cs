@@ -6,57 +6,43 @@ using OnvifManager.Services;
 
 namespace OnvifManager.ViewModels;
 
-public partial class NetworkConfigViewModel : ObservableObject
+public partial class NetworkConfigViewModel : ObservableObject, IDisposable
 {
     private readonly DiscoveryViewModel _discovery;
+    private readonly OnvifClientProvider _provider;
+    private CancellationTokenSource? _loadCts;
     private CameraDevice? _camera;
+    private bool _disposed;
 
-    [ObservableProperty]
-    private ObservableCollection<NetworkInterfaceInfo> _interfaces = new();
+    [ObservableProperty] private ObservableCollection<NetworkInterfaceInfo> _interfaces = new();
+    [ObservableProperty] private NetworkInterfaceInfo? _selectedInterface;
+    [ObservableProperty] private bool _enabled = true;
+    [ObservableProperty] private bool _IPv4Enabled = true;
+    [ObservableProperty] private bool _IPv4Dhcp = true;
+    [ObservableProperty] private string _IPv4Address = "";
+    [ObservableProperty] private int _IPv4PrefixLength = 24;
+    [ObservableProperty] private string _hwAddress = "";
+    [ObservableProperty] private int _mtu = 1500;
+    [ObservableProperty] private ObservableCollection<string> _dnsServers = new();
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private string _statusText = "";
 
-    [ObservableProperty]
-    private NetworkInterfaceInfo? _selectedInterface;
-
-    [ObservableProperty]
-    private bool _enabled = true;
-
-    [ObservableProperty]
-    private bool _IPv4Enabled = true;
-
-    [ObservableProperty]
-    private bool _IPv4Dhcp = true;
-
-    [ObservableProperty]
-    private string _IPv4Address = "";
-
-    [ObservableProperty]
-    private int _IPv4PrefixLength = 24;
-
-    [ObservableProperty]
-    private string _hwAddress = "";
-
-    [ObservableProperty]
-    private int _mtu = 1500;
-
-    [ObservableProperty]
-    private ObservableCollection<string> _dnsServers = new();
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _statusText = "";
-
-    public NetworkConfigViewModel(DiscoveryViewModel discovery)
+    public NetworkConfigViewModel(DiscoveryViewModel discovery, OnvifClientProvider provider)
     {
         _discovery = discovery;
+        _provider = provider;
         _discovery.CameraSelected += OnCameraChanged;
     }
 
-    private void OnCameraChanged() => _ = LoadAsync();
+    private void OnCameraChanged()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        _ = LoadAsync(_loadCts.Token);
+    }
 
-    [RelayCommand]
-    private async Task LoadAsync()
+    private async Task LoadAsync(CancellationToken ct)
     {
         _camera = _discovery.SelectedCamera;
         if (_camera == null) return;
@@ -66,10 +52,10 @@ public partial class NetworkConfigViewModel : ObservableObject
 
         try
         {
-            var client = new OnvifClient(_camera);
+            var client = _provider.Get(_camera);
             var deviceService = new DeviceService(client);
 
-            var interfaces = await deviceService.GetNetworkInterfacesAsync();
+            var interfaces = await deviceService.GetNetworkInterfacesAsync(ct);
             Interfaces = new ObservableCollection<NetworkInterfaceInfo>(interfaces);
 
             if (interfaces.Count > 0)
@@ -79,6 +65,10 @@ public partial class NetworkConfigViewModel : ObservableObject
             }
 
             StatusText = "Network configuration loaded";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Cancelled";
         }
         catch (Exception ex)
         {
@@ -104,14 +94,18 @@ public partial class NetworkConfigViewModel : ObservableObject
 
     partial void OnSelectedInterfaceChanged(NetworkInterfaceInfo? value)
     {
-        if (value != null)
-            LoadInterfaceIntoFields(value);
+        if (value != null) LoadInterfaceIntoFields(value);
     }
 
     [RelayCommand]
     private async Task SaveAsync()
     {
         if (SelectedInterface == null || _camera == null) return;
+
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
 
         IsLoading = true;
         StatusText = "Saving network configuration...";
@@ -125,11 +119,15 @@ public partial class NetworkConfigViewModel : ObservableObject
             SelectedInterface.IPv4PrefixLength = IPv4PrefixLength;
             SelectedInterface.Mtu = Mtu;
 
-            var client = new OnvifClient(_camera);
+            var client = _provider.Get(_camera);
             var deviceService = new DeviceService(client);
-            await deviceService.SetNetworkInterfacesAsync(SelectedInterface);
+            await deviceService.SetNetworkInterfacesAsync(SelectedInterface, ct);
 
             StatusText = "Network configuration saved successfully";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Save cancelled";
         }
         catch (Exception ex)
         {
@@ -143,4 +141,14 @@ public partial class NetworkConfigViewModel : ObservableObject
 
     [RelayCommand]
     private void Back() => _discovery.SelectedCamera = null;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _discovery.CameraSelected -= OnCameraChanged;
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = null;
+    }
 }

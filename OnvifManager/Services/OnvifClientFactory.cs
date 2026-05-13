@@ -1,48 +1,70 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net;
 using System.Text;
 using System.Xml.Linq;
 using OnvifManager.Models;
 
 namespace OnvifManager.Services;
 
-public class OnvifClient
+public sealed class OnvifClientProvider : IDisposable
 {
     private readonly HttpClient _http;
-    private readonly CameraDevice _camera;
+    private readonly OnvifClientOptions _options;
+    private bool _disposed;
 
-    public OnvifClient(CameraDevice camera)
+    public OnvifClientProvider(OnvifClientOptions options)
     {
-        _camera = camera;
-        var handler = new HttpClientHandler
-        {
-            Credentials = new NetworkCredential(camera.Username, camera.Password),
-            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-        };
-
-        _http = new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromSeconds(15)
-        };
-
-        var authBytes = Encoding.UTF8.GetBytes($"{camera.Username}:{camera.Password}");
-        _http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
+        _options = options;
+        var handler = new HttpClientHandler { UseCookies = false };
+        if (options.AllowSelfSignedCertificates)
+            handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+        _http = new HttpClient(handler) { Timeout = options.Timeout };
     }
 
-    public async Task<string> SendSoapAsync(string servicePath, string action, string bodyXml)
+    public OnvifClient Get(CameraDevice camera) => new(_http, camera);
+
+    public void Dispose()
     {
-        var serviceUri = $"{_camera.Endpoint}:{_camera.Port}{servicePath}";
-        var request = SoapMessageBuilder.Build(serviceUri, action, bodyXml, _camera.Username, _camera.Password);
+        if (_disposed) return;
+        _disposed = true;
+        _http.Dispose();
+    }
+}
 
-        var content = new StringContent(request.Xml, Encoding.UTF8, "application/soap+xml");
-        content.Headers.Add("Content-Type", "application/soap+xml; charset=utf-8");
+public sealed class OnvifClient
+{
+    private readonly HttpClient _http;
 
-        var response = await _http.PostAsync(serviceUri, content);
+    public CameraDevice Camera { get; }
+
+    internal OnvifClient(HttpClient http, CameraDevice camera)
+    {
+        _http = http;
+        Camera = camera;
+    }
+
+    public async Task<XDocument> SendSoapAsync(string servicePath, string action, XElement body,
+        CancellationToken ct = default)
+    {
+        var serviceUri = $"{Camera.Endpoint}:{Camera.Port}{servicePath}";
+        var request = SoapMessageBuilder.Build(serviceUri, action, body, Camera.Username, Camera.Password);
+
+        using var content = new StringContent(request.Xml, Encoding.UTF8, "application/soap+xml");
+        content.Headers.ContentType!.Parameters.Add(
+            new NameValueHeaderValue("action", $"\"{action}\""));
+
+        using var message = new HttpRequestMessage(HttpMethod.Post, serviceUri) { Content = content };
+        if (!string.IsNullOrEmpty(Camera.Username))
+        {
+            var token = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes($"{Camera.Username}:{Camera.Password}"));
+            message.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+        }
+
+        using var response = await _http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
-    }
 
-    public CameraDevice Camera => _camera;
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        return SoapMessageParser.LoadDocument(stream);
+    }
 }

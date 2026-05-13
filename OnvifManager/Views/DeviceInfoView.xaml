@@ -3,14 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:conv="clr-namespace:OnvifManager.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
-
-    <UserControl.Resources>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
-        <conv:InverseBoolConverter x:Key="InverseBool"/>
-    </UserControl.Resources>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -20,84 +14,75 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Device Information" FontSize="22" FontWeight="Bold"
-                       Foreground="White"/>
-            <TextBlock Text="{Binding StatusText}" Foreground="#FF999999"
-                       FontSize="13" Margin="0,4,0,0"/>
+            <TextBlock Text="Device Information" Style="{StaticResource H1}"/>
+            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}"
+                       Margin="0,4,0,0"/>
         </StackPanel>
 
         <!-- Loading overlay -->
-        <Border Grid.Row="1" Background="#FF252526" CornerRadius="8"
+        <Border Grid.Row="1" Background="{StaticResource BgSurface}" CornerRadius="8"
                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-            <TextBlock Text="Loading..." Foreground="White"
-                       FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <TextBlock Text="Loading..." FontSize="16"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
 
         <!-- Content -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
             <StackPanel>
-                <!-- Info cards -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <!-- Info card -->
+                <Border Style="{StaticResource Card}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Name"
-                                   Foreground="#FF999999" FontSize="13" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Name}"
-                                   Foreground="White" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Name" Style="{StaticResource FormLabel}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Manufacturer"
-                                   Foreground="#FF999999" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Manufacturer" Style="{StaticResource FormLabel}"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Manufacturer}"
-                                   Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Model"
-                                   Foreground="#FF999999" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Model" Style="{StaticResource FormLabel}"/>
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Model}"
-                                   Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Firmware"
-                                   Foreground="#FF999999" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Firmware" Style="{StaticResource FormLabel}"/>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding FirmwareVersion}"
-                                   Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"/>
 
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Serial Number"
-                                   Foreground="#FF999999" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Serial Number" Style="{StaticResource FormLabel}"/>
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SerialNumber}"
-                                   Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"/>
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Endpoint"
-                                   Foreground="#FF999999" FontSize="13" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Endpoint" Style="{StaticResource FormLabel}"/>
                         <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Endpoint}"
-                                   Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
 
                 <!-- Profiles section -->
-                <TextBlock Text="Media Profiles" FontSize="16" FontWeight="Bold"
-                           Foreground="White" Margin="0,12,0,8"/>
-                <Border Background="#FF252526" CornerRadius="8" Padding="16">
+                <TextBlock Text="Media Profiles" Style="{StaticResource H2}" Margin="0,12,0,8"/>
+                <Border Style="{StaticResource Card}" Padding="16">
                     <ItemsControl ItemsSource="{Binding Profiles}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#FF2D2D30" CornerRadius="4"
+                                <Border Background="{StaticResource BgElevated}" CornerRadius="4"
                                         Padding="12,8" Margin="0,0,0,6">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Name}" Foreground="White"
-                                                   FontSize="13" FontWeight="SemiBold"/>
-                                        <TextBlock Foreground="#FF999999" FontSize="11">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Style="{StaticResource Muted}" FontSize="11">
                                             <Run Text="Token: "/>
                                             <Run Text="{Binding Token}"/>
                                         </TextBlock>
@@ -109,23 +94,22 @@
                 </Border>
 
                 <!-- Services section -->
-                <TextBlock Text="ONVIF Services" FontSize="16" FontWeight="Bold"
-                           Foreground="White" Margin="0,12,0,8"/>
-                <Border Background="#FF252526" CornerRadius="8" Padding="16">
+                <TextBlock Text="ONVIF Services" Style="{StaticResource H2}" Margin="0,12,0,8"/>
+                <Border Style="{StaticResource Card}" Padding="16">
                     <ItemsControl ItemsSource="{Binding Services}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#FF2D2D30" CornerRadius="4"
+                                <Border Background="{StaticResource BgElevated}" CornerRadius="4"
                                         Padding="12,8" Margin="0,0,0,6">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Uri}" Foreground="#FF6EC8FF"
+                                        <TextBlock Text="{Binding Uri}" Style="{StaticResource TextLink}"
                                                    FontSize="12" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Namespace}"
-                                                   Foreground="#FF999999" FontSize="10"
+                                                   Style="{StaticResource Muted}" FontSize="10"
                                                    VerticalAlignment="Center" Margin="16,0,0,0"/>
                                     </Grid>
                                 </Border>

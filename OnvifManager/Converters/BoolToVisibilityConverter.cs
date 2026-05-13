@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 
 namespace OnvifManager.Converters;
@@ -9,12 +10,15 @@ public class BoolToVisibilityConverter : IValueConverter
     {
         var boolValue = value is true;
         var invert = parameter is string s && s == "Invert";
-        return invert ? !boolValue : boolValue ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        var visible = invert ? !boolValue : boolValue;
+        return visible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is System.Windows.Visibility v && v == System.Windows.Visibility.Visible;
+        var visible = value is Visibility v && v == Visibility.Visible;
+        var invert = parameter is string s && s == "Invert";
+        return invert ? !visible : visible;
     }
 }
 

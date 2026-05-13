@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -9,38 +10,40 @@ namespace OnvifManager.Services;
 public class DiscoveryService
 {
     private const int DiscoveryTimeoutMs = 5000;
+    private readonly OnvifClientProvider _provider;
 
-    public async Task<List<CameraDevice>> DiscoverAsync(string? localIp = null, CancellationToken ct = default)
+    public DiscoveryService(OnvifClientProvider provider) => _provider = provider;
+
+    public async Task<List<CameraDevice>> DiscoverAsync(string? localIp = null,
+        CancellationToken ct = default)
     {
         var cameras = new List<CameraDevice>();
         var bindAddress = string.IsNullOrEmpty(localIp) ? IPAddress.Any : IPAddress.Parse(localIp);
 
-        using var udpClient = new UdpClient();
-        udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        udpClient.Client.ReceiveTimeout = DiscoveryTimeoutMs;
-        udpClient.Client.Bind(new IPEndPoint(bindAddress, OnvifXml.DiscoveryPort));
+        using var udp = new UdpClient();
+        udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        udp.Client.ReceiveTimeout = DiscoveryTimeoutMs;
+        udp.Client.Bind(new IPEndPoint(bindAddress, OnvifXml.DiscoveryPort));
 
         if (!string.IsNullOrEmpty(localIp))
         {
-            udpClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
+            udp.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
                 new MulticastOption(IPAddress.Parse(OnvifXml.DiscoveryMulticastAddress), IPAddress.Parse(localIp)));
         }
         else
         {
-            try { udpClient.JoinMulticastGroup(IPAddress.Parse(OnvifXml.DiscoveryMulticastAddress)); }
+            try { udp.JoinMulticastGroup(IPAddress.Parse(OnvifXml.DiscoveryMulticastAddress)); }
             catch
             {
-                udpClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
+                udp.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
                     new MulticastOption(IPAddress.Parse(OnvifXml.DiscoveryMulticastAddress)));
             }
         }
 
         var messageId = Guid.NewGuid().ToString("N");
-        var probeXml = OnvifXml.GetProbeMessage(messageId);
-        var probeBytes = Encoding.UTF8.GetBytes(probeXml);
-
+        var probeBytes = Encoding.UTF8.GetBytes(OnvifXml.GetProbeMessage(messageId));
         var multicastEp = new IPEndPoint(IPAddress.Parse(OnvifXml.DiscoveryMulticastAddress), OnvifXml.DiscoveryPort);
-        await udpClient.SendAsync(probeBytes, probeBytes.Length, multicastEp);
+        await udp.SendAsync(probeBytes, probeBytes.Length, multicastEp);
 
         var startTime = DateTime.UtcNow;
         while ((DateTime.UtcNow - startTime).TotalMilliseconds < DiscoveryTimeoutMs)
@@ -48,11 +51,8 @@ public class DiscoveryService
             try
             {
                 ct.ThrowIfCancellationRequested();
-                var result = await udpClient.ReceiveAsync(ct);
-                var responseXml = Encoding.UTF8.GetString(result.Buffer);
-
-                var probeMatches = ParseProbeMatches(responseXml);
-                foreach (var match in probeMatches)
+                var result = await udp.ReceiveAsync(ct);
+                foreach (var match in ParseProbeMatches(result.Buffer))
                 {
                     match.IpAddress = result.RemoteEndPoint.Address.ToString();
                     match.IsDiscovered = true;
@@ -66,37 +66,46 @@ public class DiscoveryService
         return cameras;
     }
 
-    public async Task<CameraDevice?> ProbeUnicastAsync(string ipAddress, int port, CancellationToken ct = default)
+    public async Task<CameraDevice> ProbeUnicastAsync(string ipAddress, int port, string username, string password,
+        CancellationToken ct = default)
     {
         var camera = new CameraDevice
         {
             Endpoint = $"http://{ipAddress}",
             Port = port,
             IpAddress = ipAddress,
+            Username = username,
+            Password = password,
             IsDiscovered = false,
             IsManual = true
         };
 
         try
         {
-            var client = new OnvifClient(camera);
+            var client = _provider.Get(camera);
             var deviceService = new DeviceService(client);
-            await deviceService.GetDeviceInformationAsync();
+            await deviceService.GetDeviceInformationAsync(ct);
             camera.IsConnected = true;
             camera.StatusMessage = "Connected";
-            return camera;
         }
-        catch
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
         {
-            return camera; // Return camera even if probe fails — user can still try credentials
+            camera.StatusMessage = $"Probe failed: {ex.Message}";
         }
+
+        return camera;
     }
 
-    private static List<CameraDevice> ParseProbeMatches(string xml)
+    private static List<CameraDevice> ParseProbeMatches(byte[] bytes)
     {
         var cameras = new List<CameraDevice>();
         XDocument doc;
-        try { doc = XDocument.Parse(xml); }
+        try
+        {
+            using var ms = new MemoryStream(bytes);
+            doc = SoapMessageParser.LoadDocument(ms);
+        }
         catch { return cameras; }
 
         var body = doc.Root?.Element(OnvifXml.S + "Body");
@@ -112,8 +121,7 @@ public class DiscoveryService
             var xAddrs = match.Element(OnvifXml.WsdNs + "XAddrs")?.Value;
             if (xAddrs != null)
             {
-                var uris = xAddrs.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var uri in uris)
+                foreach (var uri in xAddrs.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (Uri.TryCreate(uri, UriKind.Absolute, out var parsedUri))
                     {
@@ -126,13 +134,12 @@ public class DiscoveryService
             var scopes = match.Element(OnvifXml.WsdNs + "Scopes")?.Value;
             if (scopes != null)
             {
-                var scopeList = scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var scope in scopeList)
+                foreach (var scope in scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (scope.Contains("name/"))
-                        camera.Name = scope[(scope.IndexOf("name/") + 5)..];
+                        camera.Name = Uri.UnescapeDataString(scope[(scope.IndexOf("name/") + 5)..]);
                     else if (scope.Contains("hardware/"))
-                        camera.HardwareId = scope[(scope.IndexOf("hardware/") + 9)..];
+                        camera.HardwareId = Uri.UnescapeDataString(scope[(scope.IndexOf("hardware/") + 9)..]);
                 }
             }
 

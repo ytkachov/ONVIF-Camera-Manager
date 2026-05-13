@@ -6,54 +6,51 @@ using OnvifManager.Services;
 
 namespace OnvifManager.ViewModels;
 
-public partial class DeviceInfoViewModel : ObservableObject
+public partial class DeviceInfoViewModel : ObservableObject, IDisposable
 {
     private readonly DiscoveryViewModel _discovery;
+    private readonly OnvifClientProvider _provider;
+    private CancellationTokenSource? _loadCts;
     private CameraDevice? _camera;
+    private bool _disposed;
 
-    [ObservableProperty]
-    private string _manufacturer = "";
+    [ObservableProperty] private string _manufacturer = "";
+    [ObservableProperty] private string _model = "";
+    [ObservableProperty] private string _firmwareVersion = "";
+    [ObservableProperty] private string _serialNumber = "";
+    [ObservableProperty] private string _hardwareId = "";
+    [ObservableProperty] private string _name = "";
+    [ObservableProperty] private string _endpoint = "";
+    [ObservableProperty] private ObservableCollection<OnvifServiceUri> _services = new();
+    [ObservableProperty] private ObservableCollection<CameraProfile> _profiles = new();
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private string _statusText = "";
 
-    [ObservableProperty]
-    private string _model = "";
-
-    [ObservableProperty]
-    private string _firmwareVersion = "";
-
-    [ObservableProperty]
-    private string _serialNumber = "";
-
-    [ObservableProperty]
-    private string _hardwareId = "";
-
-    [ObservableProperty]
-    private string _name = "";
-
-    [ObservableProperty]
-    private string _endpoint = "";
-
-    [ObservableProperty]
-    private ObservableCollection<OnvifServiceUri> _services = new();
-
-    [ObservableProperty]
-    private ObservableCollection<CameraProfile> _profiles = new();
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _statusText = "";
-
-    public DeviceInfoViewModel(DiscoveryViewModel discovery)
+    public DeviceInfoViewModel(DiscoveryViewModel discovery, OnvifClientProvider provider)
     {
         _discovery = discovery;
+        _provider = provider;
         _discovery.CameraSelected += OnCameraChanged;
     }
 
-    private void OnCameraChanged() => _ = LoadAsync();
+    private void OnCameraChanged()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        _ = LoadAsync(_loadCts.Token);
+    }
 
     [RelayCommand]
-    private async Task LoadAsync()
+    private Task LoadCurrentAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        return LoadAsync(_loadCts.Token);
+    }
+
+    private async Task LoadAsync(CancellationToken ct)
     {
         _camera = _discovery.SelectedCamera;
         if (_camera == null) return;
@@ -63,10 +60,10 @@ public partial class DeviceInfoViewModel : ObservableObject
 
         try
         {
-            var client = new OnvifClient(_camera);
+            var client = _provider.Get(_camera);
             var deviceService = new DeviceService(client);
 
-            await deviceService.GetDeviceInformationAsync();
+            await deviceService.GetDeviceInformationAsync(ct);
 
             Manufacturer = _camera.Manufacturer;
             Model = _camera.Model;
@@ -76,21 +73,23 @@ public partial class DeviceInfoViewModel : ObservableObject
             Name = _camera.Name;
             Endpoint = _camera.Endpoint;
 
-            await deviceService.GetServicesAsync();
+            await deviceService.GetServicesAsync(ct);
             Services = new ObservableCollection<OnvifServiceUri>(_camera.Services);
 
             var mediaService = new MediaService(client);
             try
             {
-                var profiles = await mediaService.GetProfilesAsync();
+                var profiles = await mediaService.GetProfilesAsync(ct);
                 Profiles = new ObservableCollection<CameraProfile>(profiles);
             }
-            catch
-            {
-                Profiles.Clear();
-            }
+            catch (OperationCanceledException) { throw; }
+            catch { Profiles.Clear(); }
 
             StatusText = "Connected";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Cancelled";
         }
         catch (Exception ex)
         {
@@ -104,4 +103,14 @@ public partial class DeviceInfoViewModel : ObservableObject
 
     [RelayCommand]
     private void Back() => _discovery.SelectedCamera = null;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _discovery.CameraSelected -= OnCameraChanged;
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = null;
+    }
 }

@@ -16,22 +16,32 @@ public partial class App : Application
 
         var services = new ServiceCollection();
 
-        // Services
+        services.AddSingleton(new OnvifClientOptions
+        {
+            AllowSelfSignedCertificates = true,
+            Timeout = TimeSpan.FromSeconds(15)
+        });
+        services.AddSingleton<OnvifClientProvider>();
+
         services.AddSingleton<DiscoveryService>();
 
-        // ViewModels
         services.AddSingleton<DiscoveryViewModel>();
         services.AddSingleton<DeviceInfoViewModel>();
         services.AddSingleton<VideoConfigViewModel>();
         services.AddSingleton<NetworkConfigViewModel>();
         services.AddSingleton<MainViewModel>();
 
-        // Shell
         services.AddSingleton<MainWindow>();
 
         _serviceProvider = services.BuildServiceProvider();
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _serviceProvider?.Dispose();
+        base.OnExit(e);
     }
 }

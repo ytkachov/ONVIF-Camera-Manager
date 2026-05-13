@@ -18,4 +18,17 @@ public class NetworkInterfaceInfo
     public string HwAddress { get; set; } = string.Empty;
 
     public List<string> DnsServers { get; set; } = new();
+
+    public string Display
+    {
+        get
+        {
+            var label = string.IsNullOrEmpty(Token) ? "(unnamed)" : Token;
+            if (!string.IsNullOrEmpty(IPv4Address))
+                label += $"  —  {IPv4Address}/{IPv4PrefixLength}";
+            if (!string.IsNullOrEmpty(HwAddress))
+                label += $"  ({HwAddress})";
+            return label;
+        }
+    }
 }

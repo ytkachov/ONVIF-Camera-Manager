@@ -11,21 +11,18 @@ public enum AppView
     NetworkConfig
 }
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
-    [ObservableProperty]
-    private AppView _currentView = AppView.DeviceInfo;
-
-    [ObservableProperty]
-    private object? _bottomViewModel;
-
-    [ObservableProperty]
-    private string _statusText = "Ready";
+    [ObservableProperty] private AppView _currentView = AppView.DeviceInfo;
+    [ObservableProperty] private object? _bottomViewModel;
+    [ObservableProperty] private string _statusText = "Ready";
 
     public DiscoveryViewModel Discovery { get; }
     public DeviceInfoViewModel DeviceInfo { get; }
     public VideoConfigViewModel VideoConfig { get; }
     public NetworkConfigViewModel NetworkConfig { get; }
+
+    private bool _disposed;
 
     public MainViewModel(
         DiscoveryViewModel discovery,
@@ -70,5 +67,16 @@ public partial class MainViewModel : ObservableObject
             AppView.NetworkConfig => NetworkConfig,
             _ => DeviceInfo
         };
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        Discovery.CameraSelected -= OnCameraSelected;
+        Discovery.DeviceInfoRequested -= OnDeviceInfoRequested;
+        Discovery.VideoConfigRequested -= OnVideoConfigRequested;
+        Discovery.NetworkConfigRequested -= OnNetworkConfigRequested;
     }
 }

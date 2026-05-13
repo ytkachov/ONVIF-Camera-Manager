@@ -3,39 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:conv="clr-namespace:OnvifManager.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
-
-    <UserControl.Resources>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
-        <conv:InverseBoolConverter x:Key="InverseBool"/>
-
-        <Style x:Key="FormLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#FF999999"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="0,0,16,0"/>
-        </Style>
-
-        <Style x:Key="FormInput" TargetType="TextBox">
-            <Setter Property="Background" Value="#FF333337"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF555555"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <Style x:Key="FormCombo" TargetType="ComboBox">
-            <Setter Property="Background" Value="#FF333337"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF555555"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="FontSize" Value="13"/>
-        </Style>
-    </UserControl.Resources>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -44,49 +13,40 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Network Configuration" FontSize="22" FontWeight="Bold" Foreground="White"/>
-            <TextBlock Text="{Binding StatusText}" Foreground="#FF999999" FontSize="13" Margin="0,4,0,0"/>
+            <TextBlock Text="Network Configuration" Style="{StaticResource H1}"/>
+            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}"
+                       Margin="0,4,0,0"/>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- Interface Selection -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="140"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
                         <TextBlock Text="Interface:" Style="{StaticResource FormLabel}"/>
                         <ComboBox Grid.Column="1" ItemsSource="{Binding Interfaces}"
                                   SelectedItem="{Binding SelectedInterface}"
-                                  DisplayMemberPath="Token"
-                                  Style="{StaticResource FormCombo}"/>
+                                  DisplayMemberPath="Display"/>
                     </Grid>
                 </Border>
 
                 <!-- IP Configuration -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="IPv4 Configuration" FontSize="16" FontWeight="Bold"
-                                   Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="IPv4 Configuration" Style="{StaticResource H2}"
+                                   Margin="0,0,0,12"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Enabled:" Style="{StaticResource FormLabel}"/>
-                            <CheckBox Grid.Column="1" IsChecked="{Binding Enabled}"
-                                      Foreground="White" VerticalAlignment="Center">
-                                <CheckBox.Resources>
-                                    <Style TargetType="Path"
-                                           d:Name="CheckMarkPath"
-                                           BasedOn="{x:Null}"/>
-                                </CheckBox.Resources>
-                            </CheckBox>
+                            <CheckBox Grid.Column="1" IsChecked="{Binding Enabled}"/>
                         </Grid>
 
                         <Grid Margin="0,8">
@@ -94,10 +54,8 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="DHCP:" Style="{StaticResource FormLabel}"/>
-                            <CheckBox Grid.Column="1" IsChecked="{Binding IPv4Dhcp}"
-                                      Foreground="White" VerticalAlignment="Center"/>
+                            <CheckBox Grid.Column="1" IsChecked="{Binding IPv4Dhcp}"/>
                         </Grid>
 
                         <Grid Margin="0,8">
@@ -105,10 +63,8 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="IP Address:" Style="{StaticResource FormLabel}"/>
                             <TextBox Grid.Column="1" Text="{Binding IPv4Address}"
-                                     Style="{StaticResource FormInput}"
                                      IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
                         </Grid>
 
@@ -117,30 +73,26 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="Prefix Length:" Style="{StaticResource FormLabel}"/>
                             <TextBox Grid.Column="1" Text="{Binding IPv4PrefixLength}"
-                                     Style="{StaticResource FormInput}"
                                      IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- Hardware Info -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Hardware Information" FontSize="16" FontWeight="Bold"
-                                   Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="Hardware Information" Style="{StaticResource H2}"
+                                   Margin="0,0,0,12"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="MAC Address:" Style="{StaticResource FormLabel}"/>
-                            <TextBlock Grid.Column="1" Text="{Binding HwAddress}"
-                                       Foreground="White" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding HwAddress}" VerticalAlignment="Center"/>
                         </Grid>
 
                         <Grid Margin="0,8">
@@ -148,24 +100,24 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Text="MTU:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding Mtu}" Style="{StaticResource FormInput}"/>
+                            <TextBox Grid.Column="1" Text="{Binding Mtu}"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- DNS -->
-                <Border Background="#FF252526" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="DNS Servers" FontSize="16" FontWeight="Bold"
-                                   Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="DNS Servers" Style="{StaticResource H2}"
+                                   Margin="0,0,0,12"/>
                         <ItemsControl ItemsSource="{Binding DnsServers}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#FF2D2D30" CornerRadius="4"
+                                    <Border Background="{StaticResource BgElevated}" CornerRadius="4"
                                             Padding="10,6" Margin="0,0,0,4">
-                                        <TextBlock Text="{Binding}" Foreground="#FF6EC8FF" FontSize="12"/>
+                                        <TextBlock Text="{Binding}" Style="{StaticResource TextLink}"
+                                                   FontSize="12"/>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -176,15 +128,7 @@
                 <!-- Buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                     <Button Content="Save Configuration" Command="{Binding SaveCommand}"
-                            Background="#FF0078D4" Foreground="White"
-                            BorderThickness="0" FontSize="14" FontWeight="SemiBold"
-                            Padding="24,10" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="6"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            Style="{StaticResource AccentButton}"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
