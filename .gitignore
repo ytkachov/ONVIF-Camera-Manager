@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.DotSettings.user
+
+# IDE
+.vs/
+.idea/
+*.sln.docstates
+
+# Claude
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
