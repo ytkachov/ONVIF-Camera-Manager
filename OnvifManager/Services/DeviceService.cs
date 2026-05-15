@@ -76,25 +76,41 @@ public class DeviceService
 
     public async Task SetDeviceNameAsync(string name, CancellationToken ct = default)
     {
+        var trimmed = (name ?? string.Empty).Trim();
+
         var scopes = await GetScopesAsync(ct);
-        var newScope = $"{NameScopePrefix}{Uri.EscapeDataString((name ?? string.Empty).Trim())}";
+        var newScope = $"{NameScopePrefix}{Uri.EscapeDataString(trimmed)}";
 
         var oldScopes = scopes.Where(s =>
             s.StartsWith(NameScopePrefix, StringComparison.OrdinalIgnoreCase)).ToList();
 
-        foreach (var old in oldScopes)
+        var alreadyHasNewScope = oldScopes.Any(s => string.Equals(s, newScope, StringComparison.Ordinal));
+
+        foreach (var old in oldScopes.Where(s => !string.Equals(s, newScope, StringComparison.Ordinal)))
         {
-            if (string.Equals(old, newScope, StringComparison.Ordinal)) return;
             var rmBody = new XElement(OnvifXml.Ttds + "RemoveScopes",
                 new XElement(OnvifXml.Ttds + "ScopeItem", old));
-            await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
-                "http://www.onvif.org/ver10/device/wsdl/RemoveScopes", rmBody, ct);
+            try
+            {
+                await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+                    "http://www.onvif.org/ver10/device/wsdl/RemoveScopes", rmBody, ct);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { }
         }
 
-        var addBody = new XElement(OnvifXml.Ttds + "AddScopes",
-            new XElement(OnvifXml.Ttds + "ScopeItem", newScope));
-        await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
-            "http://www.onvif.org/ver10/device/wsdl/AddScopes", addBody, ct);
+        if (!alreadyHasNewScope)
+        {
+            var addBody = new XElement(OnvifXml.Ttds + "AddScopes",
+                new XElement(OnvifXml.Ttds + "ScopeItem", newScope));
+            try
+            {
+                await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+                    "http://www.onvif.org/ver10/device/wsdl/AddScopes", addBody, ct);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { }
+        }
     }
 
     public async Task<List<OnvifServiceUri>> GetServicesAsync(CancellationToken ct = default)

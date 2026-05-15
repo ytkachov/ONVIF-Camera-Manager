@@ -72,21 +72,35 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             HardwareId = _camera.HardwareId;
             Endpoint = _camera.Endpoint;
 
-            try
+            string resolvedName = string.Empty;
+
+            if (HikvisionIsapiService.Matches(_camera))
             {
-                var deviceName = await deviceService.GetDeviceNameAsync(ct);
-                if (!string.IsNullOrWhiteSpace(deviceName))
+                try
                 {
-                    _camera.Name = deviceName.Trim();
-                    Name = deviceName.Trim();
+                    var isapi = new HikvisionIsapiService(client);
+                    resolvedName = (await isapi.GetDeviceNameAsync(ct)).Trim();
                 }
-                else
-                {
-                    Name = _camera.Name;
-                }
+                catch (OperationCanceledException) { throw; }
+                catch { }
             }
-            catch (OperationCanceledException) { throw; }
-            catch
+
+            if (string.IsNullOrEmpty(resolvedName))
+            {
+                try
+                {
+                    resolvedName = (await deviceService.GetDeviceNameAsync(ct)).Trim();
+                }
+                catch (OperationCanceledException) { throw; }
+                catch { }
+            }
+
+            if (!string.IsNullOrEmpty(resolvedName))
+            {
+                _camera.Name = resolvedName;
+                Name = resolvedName;
+            }
+            else
             {
                 Name = _camera.Name;
             }
@@ -137,6 +151,21 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             var newName = (Name ?? "").Trim();
             var client = _provider.Get(_camera);
             var deviceService = new DeviceService(client);
+
+            if (HikvisionIsapiService.Matches(_camera))
+            {
+                try
+                {
+                    var isapi = new HikvisionIsapiService(client);
+                    await isapi.SetDeviceNameAsync(newName, ct);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    StatusText = $"Hikvision ISAPI: {ex.Message}";
+                }
+            }
+
             await deviceService.SetDeviceNameAsync(newName, ct);
 
             _camera.Name = newName;

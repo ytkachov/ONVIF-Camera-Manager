@@ -86,14 +86,30 @@ public class DiscoveryService
             var deviceService = new DeviceService(client);
             await deviceService.GetDeviceInformationAsync(ct);
 
-            try
+            if (HikvisionIsapiService.Matches(camera))
             {
-                var deviceName = await deviceService.GetDeviceNameAsync(ct);
-                if (!string.IsNullOrWhiteSpace(deviceName))
-                    camera.Name = deviceName.Trim();
+                try
+                {
+                    var isapi = new HikvisionIsapiService(client);
+                    var hikName = await isapi.GetDeviceNameAsync(ct);
+                    if (!string.IsNullOrWhiteSpace(hikName))
+                        camera.Name = hikName.Trim();
+                }
+                catch (OperationCanceledException) { throw; }
+                catch { }
             }
-            catch (OperationCanceledException) { throw; }
-            catch { }
+
+            if (string.IsNullOrEmpty(camera.Name))
+            {
+                try
+                {
+                    var deviceName = await deviceService.GetDeviceNameAsync(ct);
+                    if (!string.IsNullOrWhiteSpace(deviceName))
+                        camera.Name = deviceName.Trim();
+                }
+                catch (OperationCanceledException) { throw; }
+                catch { }
+            }
 
             camera.IsConnected = true;
             camera.StatusMessage = "Connected";

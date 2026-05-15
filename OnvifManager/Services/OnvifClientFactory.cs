@@ -60,6 +60,9 @@ public sealed class OnvifClient
         Camera = camera;
     }
 
+    public Task<HttpResponseMessage> SendRawAsync(HttpRequestMessage request, CancellationToken ct = default) =>
+        _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+
     public async Task<XDocument> SendSoapAsync(string servicePath, string action, XElement body,
         CancellationToken ct = default)
     {
