@@ -113,7 +113,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 Events.ApplyCommand.Execute(null);
                 break;
             case ParamTab.Info:
-                await DeviceInfo.LoadCurrentCommand.ExecuteAsync(null);
+                await DeviceInfo.SaveCommand.ExecuteAsync(null);
                 break;
         }
     }

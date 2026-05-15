@@ -184,10 +184,12 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(camera.Manufacturer))
-                camera.Name = $"{camera.Manufacturer} {camera.Model} ({ip})";
-            else if (string.IsNullOrEmpty(camera.Name))
-                camera.Name = $"Manual: {ip}:{port}";
+            if (string.IsNullOrEmpty(camera.Name))
+            {
+                camera.Name = !string.IsNullOrEmpty(camera.Manufacturer)
+                    ? $"{camera.Manufacturer} {camera.Model}"
+                    : $"Manual: {ip}:{port}";
+            }
 
             Cameras.Add(camera);
             SelectedCamera = camera;

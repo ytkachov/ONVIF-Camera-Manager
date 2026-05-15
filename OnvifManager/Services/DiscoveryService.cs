@@ -85,6 +85,16 @@ public class DiscoveryService
             var client = _provider.Get(camera);
             var deviceService = new DeviceService(client);
             await deviceService.GetDeviceInformationAsync(ct);
+
+            try
+            {
+                var deviceName = await deviceService.GetDeviceNameAsync(ct);
+                if (!string.IsNullOrWhiteSpace(deviceName))
+                    camera.Name = deviceName.Trim();
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { }
+
             camera.IsConnected = true;
             camera.StatusMessage = "Connected";
         }

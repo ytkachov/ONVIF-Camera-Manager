@@ -70,8 +70,26 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             FirmwareVersion = _camera.FirmwareVersion;
             SerialNumber = _camera.SerialNumber;
             HardwareId = _camera.HardwareId;
-            Name = _camera.Name;
             Endpoint = _camera.Endpoint;
+
+            try
+            {
+                var deviceName = await deviceService.GetDeviceNameAsync(ct);
+                if (!string.IsNullOrWhiteSpace(deviceName))
+                {
+                    _camera.Name = deviceName.Trim();
+                    Name = deviceName.Trim();
+                }
+                else
+                {
+                    Name = _camera.Name;
+                }
+            }
+            catch (OperationCanceledException) { throw; }
+            catch
+            {
+                Name = _camera.Name;
+            }
 
             await deviceService.GetServicesAsync(ct);
             Services = new ObservableCollection<OnvifServiceUri>(_camera.Services);
@@ -94,6 +112,51 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             StatusText = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveAsync()
+    {
+        if (_camera == null) return;
+
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
+        IsLoading = true;
+        StatusText = "Сохранение имени…";
+
+        try
+        {
+            var newName = (Name ?? "").Trim();
+            var client = _provider.Get(_camera);
+            var deviceService = new DeviceService(client);
+            await deviceService.SetDeviceNameAsync(newName, ct);
+
+            _camera.Name = newName;
+            StatusText = "Имя сохранено";
+
+            var idx = _discovery.Cameras.IndexOf(_camera);
+            if (idx >= 0)
+            {
+                _discovery.Cameras.RemoveAt(idx);
+                _discovery.Cameras.Insert(idx, _camera);
+                _discovery.SelectedCamera = _camera;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Сохранение отменено";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Ошибка: {ex.Message}";
         }
         finally
         {

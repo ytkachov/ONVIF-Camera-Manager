@@ -29,6 +29,74 @@ public class DeviceService
         _client.Camera.StatusMessage = "Connected";
     }
 
+    private const string NameScopePrefix = "onvif://www.onvif.org/name/";
+
+    public async Task<string> GetHostnameAsync(CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "GetHostname");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetHostname", body, ct);
+
+        var info = SoapMessageParser.ParseBody(doc)
+            .Descendants().FirstOrDefault(e => e.Name.LocalName == "HostnameInformation");
+        return info == null ? string.Empty : LocalValue(info, "Name");
+    }
+
+    public async Task SetHostnameAsync(string hostname, CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "SetHostname",
+            new XElement(OnvifXml.Ttds + "Name", hostname ?? string.Empty));
+
+        await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/SetHostname", body, ct);
+    }
+
+    public async Task<List<string>> GetScopesAsync(CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "GetScopes");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetScopes", body, ct);
+
+        return SoapMessageParser.ParseBody(doc)
+            .Descendants().Where(e => e.Name.LocalName == "ScopeItem")
+            .Select(e => e.Value?.Trim() ?? string.Empty)
+            .Where(s => !string.IsNullOrEmpty(s))
+            .ToList();
+    }
+
+    public async Task<string> GetDeviceNameAsync(CancellationToken ct = default)
+    {
+        var scopes = await GetScopesAsync(ct);
+        var nameScope = scopes.FirstOrDefault(s =>
+            s.StartsWith(NameScopePrefix, StringComparison.OrdinalIgnoreCase));
+        return nameScope == null
+            ? string.Empty
+            : Uri.UnescapeDataString(nameScope[NameScopePrefix.Length..]);
+    }
+
+    public async Task SetDeviceNameAsync(string name, CancellationToken ct = default)
+    {
+        var scopes = await GetScopesAsync(ct);
+        var newScope = $"{NameScopePrefix}{Uri.EscapeDataString((name ?? string.Empty).Trim())}";
+
+        var oldScopes = scopes.Where(s =>
+            s.StartsWith(NameScopePrefix, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        foreach (var old in oldScopes)
+        {
+            if (string.Equals(old, newScope, StringComparison.Ordinal)) return;
+            var rmBody = new XElement(OnvifXml.Ttds + "RemoveScopes",
+                new XElement(OnvifXml.Ttds + "ScopeItem", old));
+            await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+                "http://www.onvif.org/ver10/device/wsdl/RemoveScopes", rmBody, ct);
+        }
+
+        var addBody = new XElement(OnvifXml.Ttds + "AddScopes",
+            new XElement(OnvifXml.Ttds + "ScopeItem", newScope));
+        await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/AddScopes", addBody, ct);
+    }
+
     public async Task<List<OnvifServiceUri>> GetServicesAsync(CancellationToken ct = default)
     {
         var services = new List<OnvifServiceUri>();
