@@ -19,7 +19,7 @@ public partial class App : Application
         services.AddSingleton(new OnvifClientOptions
         {
             AllowSelfSignedCertificates = true,
-            Timeout = TimeSpan.FromSeconds(15)
+            Timeout = TimeSpan.FromSeconds(30)
         });
         services.AddSingleton<OnvifClientProvider>();
 
@@ -29,6 +29,8 @@ public partial class App : Application
         services.AddSingleton<DeviceInfoViewModel>();
         services.AddSingleton<VideoConfigViewModel>();
         services.AddSingleton<NetworkConfigViewModel>();
+        services.AddSingleton<PtzViewModel>();
+        services.AddSingleton<EventsViewModel>();
         services.AddSingleton<MainViewModel>();
 
         services.AddSingleton<MainWindow>();

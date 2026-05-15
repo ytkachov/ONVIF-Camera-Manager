@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace OnvifManager.Views;
 
-public partial class DiscoveryView : UserControl
+public partial class PtzView : UserControl
 {
-    public DiscoveryView()
+    public PtzView()
     {
         InitializeComponent();
     }

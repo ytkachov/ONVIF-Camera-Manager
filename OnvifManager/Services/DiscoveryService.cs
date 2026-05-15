@@ -91,7 +91,10 @@ public class DiscoveryService
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            camera.StatusMessage = $"Probe failed: {ex.Message}";
+            var inner = ex.InnerException;
+            camera.StatusMessage = inner != null
+                ? $"Probe failed: {ex.Message} → {inner.Message}"
+                : $"Probe failed: {ex.Message}";
         }
 
         return camera;

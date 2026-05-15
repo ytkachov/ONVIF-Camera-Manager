@@ -4,133 +4,114 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="800">
+             d:DesignHeight="500" d:DesignWidth="340">
 
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <UserControl.Resources>
+        <Style x:Key="ParamLabel" TargetType="TextBlock" BasedOn="{StaticResource FormLabel}">
+            <Setter Property="Width" Value="115"/>
+        </Style>
+    </UserControl.Resources>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Network Configuration" Style="{StaticResource H1}"/>
-            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}"
-                       Margin="0,4,0,0"/>
-        </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14">
+        <StackPanel>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- Interface Selection -->
-                <Border Style="{StaticResource Card}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="140"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Interface:" Style="{StaticResource FormLabel}"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding Interfaces}"
-                                  SelectedItem="{Binding SelectedInterface}"
-                                  DisplayMemberPath="Display"/>
-                    </Grid>
-                </Border>
+            <!-- Interface -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="ИНТЕРФЕЙС" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
-                <!-- IP Configuration -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="IPv4 Configuration" Style="{StaticResource H2}"
-                                   Margin="0,0,0,12"/>
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Enabled:" Style="{StaticResource FormLabel}"/>
-                            <CheckBox Grid.Column="1" IsChecked="{Binding Enabled}"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="DHCP:" Style="{StaticResource FormLabel}"/>
-                            <CheckBox Grid.Column="1" IsChecked="{Binding IPv4Dhcp}"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="IP Address:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding IPv4Address}"
-                                     IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Prefix Length:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding IPv4PrefixLength}"
-                                     IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Hardware Info -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="Hardware Information" Style="{StaticResource H2}"
-                                   Margin="0,0,0,12"/>
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="MAC Address:" Style="{StaticResource FormLabel}"/>
-                            <TextBlock Grid.Column="1" Text="{Binding HwAddress}" VerticalAlignment="Center"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="MTU:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding Mtu}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- DNS -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="DNS Servers" Style="{StaticResource H2}"
-                                   Margin="0,0,0,12"/>
-                        <ItemsControl ItemsSource="{Binding DnsServers}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="{StaticResource BgElevated}" CornerRadius="4"
-                                            Padding="10,6" Margin="0,0,0,4">
-                                        <TextBlock Text="{Binding}" Style="{StaticResource TextLink}"
-                                                   FontSize="12"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-
-                <!-- Buttons -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                    <Button Content="Save Configuration" Command="{Binding SaveCommand}"
-                            Style="{StaticResource AccentButton}"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Интерфейс" Style="{StaticResource FormLabel}"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Interfaces}"
+                              SelectedItem="{Binding SelectedInterface}"
+                              DisplayMemberPath="Display"/>
+                </Grid>
             </StackPanel>
-        </ScrollViewer>
-    </Grid>
+
+            <!-- IPv4 -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="IPv4" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Активен" Style="{StaticResource ParamLabel}"/>
+                    <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Enabled}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="DHCP" Style="{StaticResource ParamLabel}"/>
+                    <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding IPv4Dhcp}"/>
+                </StackPanel>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="IP-адрес" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding IPv4Address}"
+                             IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Префикс" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding IPv4PrefixLength}"
+                             IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Hardware -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="HARDWARE" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="MAC" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding HwAddress}" IsReadOnly="True"/>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="MTU" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Mtu}"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- DNS -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="DNS" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                <ItemsControl ItemsSource="{Binding DnsServers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource BgElevated}" CornerRadius="4"
+                                    Padding="10,5" Margin="0,0,0,4">
+                                <TextBlock Text="{Binding}"
+                                           Foreground="{StaticResource Link}"
+                                           FontSize="11" FontFamily="Consolas"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusText}"
+                       Style="{StaticResource Muted}" FontSize="11"
+                       Margin="0,8,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

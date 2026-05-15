@@ -8,9 +8,14 @@ public class BoolToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        var boolValue = value is true;
+        var visible = value switch
+        {
+            null => false,
+            bool b => b,
+            _ => true
+        };
         var invert = parameter is string s && s == "Invert";
-        var visible = invert ? !boolValue : boolValue;
+        if (invert) visible = !visible;
         return visible ? Visibility.Visible : Visibility.Collapsed;
     }
 

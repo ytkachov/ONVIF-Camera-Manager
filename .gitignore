@@ -17,6 +17,9 @@ obj/
 # Claude
 .claude/
 
+# Local-only design references
+mockups/
+
 # OS
 .DS_Store
 Thumbs.db

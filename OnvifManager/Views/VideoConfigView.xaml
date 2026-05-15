@@ -4,162 +4,158 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="800">
+             d:DesignHeight="500" d:DesignWidth="340">
 
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <UserControl.Resources>
+        <Style x:Key="ParamLabel" TargetType="TextBlock" BasedOn="{StaticResource FormLabel}">
+            <Setter Property="Width" Value="115"/>
+        </Style>
+    </UserControl.Resources>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Video Configuration" Style="{StaticResource H1}"/>
-            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}"
-                       Margin="0,4,0,0"/>
-        </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14">
+        <StackPanel>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- Encoder Selection -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="Encoder Selection" Style="{StaticResource H2}"
-                                   Margin="0,0,0,12"/>
+            <!-- Profile -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="ПРОФИЛЬ" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Profile:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding Profiles}"
-                                      SelectedItem="{Binding SelectedProfile}"
-                                      DisplayMemberPath="Name"/>
-                        </Grid>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Профиль" Style="{StaticResource FormLabel}"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Profiles}"
+                              SelectedItem="{Binding SelectedProfile}"
+                              DisplayMemberPath="Name"/>
+                </Grid>
 
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Encoder:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding EncoderConfigs}"
-                                      SelectedItem="{Binding SelectedEncoder}"
-                                      DisplayMemberPath="Name"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Video Settings -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="Video Settings" Style="{StaticResource H2}"
-                                   Margin="0,0,0,12"/>
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Encoding:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" Text="{Binding Encoding}" IsEditable="True">
-                                <ComboBoxItem Content="H264"/>
-                                <ComboBoxItem Content="H265"/>
-                                <ComboBoxItem Content="JPEG"/>
-                                <ComboBoxItem Content="MPEG4"/>
-                            </ComboBox>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="H.264 Profile:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" Text="{Binding H264Profile}" IsEditable="True">
-                                <ComboBoxItem Content="Baseline"/>
-                                <ComboBoxItem Content="Main"/>
-                                <ComboBoxItem Content="High"/>
-                            </ComboBox>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="GOV Length:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding GovLength}"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Quality:" Style="{StaticResource FormLabel}"/>
-                            <ComboBox Grid.Column="1" SelectedIndex="{Binding Quality}">
-                                <ComboBoxItem Content="CBR (Constant Bitrate)"/>
-                                <ComboBoxItem Content="VBR (Variable Bitrate)"/>
-                                <ComboBoxItem Content="CQ (Constant Quality)"/>
-                            </ComboBox>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Resolution & Rate -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="Resolution &amp; Rate" Style="{StaticResource H2}"
-                                   Margin="0,0,0,12"/>
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Width:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding Width}" Margin="0,0,16,0"/>
-                            <TextBlock Grid.Column="2" Text="Height:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="3" Text="{Binding Height}"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Frame Rate Limit:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding FrameRateLimit}" Margin="0,0,16,0"/>
-                            <TextBlock Grid.Column="2" Text="Enc. Interval:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="3" Text="{Binding EncodingInterval}"/>
-                        </Grid>
-
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Bitrate (kbps):" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="1" Text="{Binding BitrateLimit}" Margin="0,0,16,0"/>
-                            <TextBlock Grid.Column="2" Text="Stream URI:" Style="{StaticResource FormLabel}"/>
-                            <TextBox Grid.Column="3" Text="{Binding StreamUri}" IsReadOnly="True"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Buttons -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                    <Button Content="Save Configuration" Command="{Binding SaveCommand}"
-                            Style="{StaticResource AccentButton}"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Энкодер" Style="{StaticResource FormLabel}"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding EncoderConfigs}"
+                              SelectedItem="{Binding SelectedEncoder}"
+                              DisplayMemberPath="Name"/>
+                </Grid>
             </StackPanel>
-        </ScrollViewer>
-    </Grid>
+
+            <!-- Encoding -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="КОДИРОВАНИЕ" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Кодек" Style="{StaticResource FormLabel}"/>
+                    <ComboBox Grid.Column="1" Text="{Binding Encoding}" IsEditable="True">
+                        <ComboBoxItem Content="H264"/>
+                        <ComboBoxItem Content="H265"/>
+                        <ComboBoxItem Content="JPEG"/>
+                        <ComboBoxItem Content="MPEG4"/>
+                    </ComboBox>
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="H.264 Profile" Style="{StaticResource FormLabel}"/>
+                    <ComboBox Grid.Column="1" Text="{Binding H264Profile}" IsEditable="True">
+                        <ComboBoxItem Content="Baseline"/>
+                        <ComboBoxItem Content="Main"/>
+                        <ComboBoxItem Content="High"/>
+                    </ComboBox>
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="GOV Length" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding GovLength}"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Битрейт, kbps" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding BitrateLimit}"/>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Тип битрейта" Style="{StaticResource FormLabel}"/>
+                    <ComboBox Grid.Column="1" SelectedIndex="{Binding Quality}">
+                        <ComboBoxItem Content="CBR (постоянный)"/>
+                        <ComboBoxItem Content="VBR (переменный)"/>
+                        <ComboBoxItem Content="CQ (постоянное качество)"/>
+                    </ComboBox>
+                </Grid>
+            </StackPanel>
+
+            <!-- Resolution & rate -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="РАЗРЕШЕНИЕ" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="W × H" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Width}"/>
+                    <TextBox Grid.Column="3" Text="{Binding Height}"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Частота, fps" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding FrameRateLimit}"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Enc. interval" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding EncodingInterval}"/>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Stream URI" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding StreamUri}" IsReadOnly="True"
+                             TextWrapping="NoWrap"/>
+                </Grid>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusText}"
+                       Style="{StaticResource Muted}" FontSize="11"
+                       Margin="0,8,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

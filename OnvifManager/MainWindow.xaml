@@ -4,85 +4,275 @@
         xmlns:vm="clr-namespace:OnvifManager.ViewModels"
         xmlns:views="clr-namespace:OnvifManager.Views"
         Title="ONVIF Camera Manager"
-        Background="{StaticResource BgBase}"
-        Height="720" Width="1100"
-        MinHeight="500" MinWidth="900"
+        Background="{StaticResource BgSurface}"
+        Height="760" Width="1240"
+        MinHeight="560" MinWidth="1000"
         WindowStartupLocation="CenterScreen">
 
-    <Window.Resources>
-        <DataTemplate DataType="{x:Type vm:DiscoveryViewModel}">
-            <views:DiscoveryView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:DeviceInfoViewModel}">
-            <views:DeviceInfoView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:VideoConfigViewModel}">
-            <views:VideoConfigView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:NetworkConfigViewModel}">
-            <views:NetworkConfigView/>
-        </DataTemplate>
-    </Window.Resources>
-
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <!-- Sidebar -->
-        <Border Grid.Column="0" Background="{StaticResource BgSurface}"
-                BorderBrush="{StaticResource Border}" BorderThickness="0,0,1,0">
-            <Grid>
+        <!-- Menu bar -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="_Файл">
+                <MenuItem Header="Выход" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Вид"/>
+            <MenuItem Header="_Камеры">
+                <MenuItem Header="Поиск" Command="{Binding ScanCommand}"/>
+                <MenuItem Header="Добавить вручную…" Command="{Binding AddManualCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Запись"/>
+            <MenuItem Header="_Инструменты"/>
+            <MenuItem Header="_Справка"/>
+        </Menu>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1" Background="{StaticResource BgElevated}"
+                BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1">
+            <Grid Margin="14,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Style="{StaticResource PrimaryToolbarButton}"
+                        Command="{Binding ScanCommand}"
+                        IsEnabled="{Binding Discovery.IsScanning, Converter={StaticResource InverseBool}}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="14" Height="14" Fill="White"
+                              Data="{StaticResource IconSearch}" Stretch="Uniform"/>
+                        <TextBlock Text="Поиск камер" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="1" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding AddManualCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="14" Height="14" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconPlus}" Stretch="Uniform"/>
+                        <TextBlock Text="Добавить вручную" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Border Grid.Column="2" Width="1" Height="22"
+                        Background="{StaticResource BorderStrong}" Margin="4,0,10,0"/>
+
+                <Button Grid.Column="3" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding StartStreamCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="13" Height="13" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconPlay}" Stretch="Uniform"/>
+                        <TextBlock Text="Старт" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="4" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding StopStreamCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="11" Height="11" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconStop}" Stretch="Uniform"/>
+                        <TextBlock Text="Стоп" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="5" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding ToggleRecordCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="11" Height="11" Fill="{StaticResource Danger}"/>
+                        <TextBlock Text="Запись" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="6" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding SnapshotCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="14" Height="14" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconSnapshot}" Stretch="Uniform"/>
+                        <TextBlock Text="Снимок" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Border Grid.Column="7" Width="1" Height="22"
+                        Background="{StaticResource BorderStrong}" Margin="4,0,10,0"/>
+
+                <Button Style="{StaticResource ToolbarButton}" Grid.Column="8"
+                        HorizontalAlignment="Left"
+                        Command="{Binding OpenSettingsCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="14" Height="14" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconSettings}" Stretch="Uniform"/>
+                        <TextBlock Text="Настройки" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <StackPanel Grid.Column="9" Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8"
+                             VerticalAlignment="Center" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource Success}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Discovery.IsScanning}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource AccentLight}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding Discovery.SelectedNetworkInterface.IpAddress, StringFormat='Сеть: {0}', TargetNullValue='Сеть: —'}"
+                               Foreground="{StaticResource TextMuted}" FontSize="12"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main: 3-column layout -->
+        <Grid Grid.Row="2" Background="{StaticResource BgBase}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="*" MinWidth="320"/>
+                <ColumnDefinition Width="360"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: camera list -->
+            <views:CameraListView Grid.Column="0" DataContext="{Binding Discovery}"/>
+
+            <!-- Center: video -->
+            <views:VideoView Grid.Column="1"/>
+
+            <!-- Right: tab control -->
+            <Grid Grid.Column="2" Background="{StaticResource BgPanel}">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="ONVIF Manager"
-                           Style="{StaticResource H2}"
-                           Margin="16,20,16,20"/>
+                <TabControl Grid.Row="0" SelectedIndex="{Binding SelectedTabIndex}">
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Path Width="16" Height="16" Stretch="Uniform"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
+                                      Data="{StaticResource IconInfo}"/>
+                                <TextBlock Text="Инфо" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:DeviceInfoView DataContext="{Binding DeviceInfo}"/>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Path Width="16" Height="16" Stretch="Uniform"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
+                                      Data="{StaticResource IconVideo}"/>
+                                <TextBlock Text="Видео" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:VideoConfigView DataContext="{Binding VideoConfig}"/>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Path Width="16" Height="16" Stretch="Uniform"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
+                                      Data="{StaticResource IconNetwork}"/>
+                                <TextBlock Text="Сеть" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:NetworkConfigView DataContext="{Binding NetworkConfig}"/>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Path Width="16" Height="16" Stretch="Uniform"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
+                                      Data="{StaticResource IconPtz}"/>
+                                <TextBlock Text="PTZ" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:PtzView DataContext="{Binding Ptz}"/>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Path Width="16" Height="16" Stretch="Uniform"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}"
+                                      Data="{StaticResource IconEvents}"/>
+                                <TextBlock Text="События" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:EventsView DataContext="{Binding Events}"/>
+                    </TabItem>
+                </TabControl>
 
-                <StackPanel Grid.Row="1" Margin="8,0">
-                    <TextBlock Text="CAMERA DETAILS" Style="{StaticResource Muted}"
-                               Margin="8,0,0,8" FontSize="11" FontWeight="Bold"/>
-
-                    <Button Content="Device Info"
-                            Command="{Binding NavigateToDeviceInfoCommand}"
-                            Style="{StaticResource NavButton}"/>
-
-                    <Button Content="Video Config"
-                            Command="{Binding NavigateToVideoConfigCommand}"
-                            Style="{StaticResource NavButton}"/>
-
-                    <Button Content="Network Config"
-                            Command="{Binding NavigateToNetworkConfigCommand}"
-                            Style="{StaticResource NavButton}"/>
-                </StackPanel>
-
-                <Border Grid.Row="2" Background="{StaticResource BgBase}" Padding="12,10">
-                    <TextBlock Text="{Binding Discovery.StatusText}"
-                               Style="{StaticResource Muted}"
-                               FontSize="11" TextWrapping="Wrap"/>
+                <!-- Apply / Cancel footer -->
+                <Border Grid.Row="1" Background="{StaticResource BgPanelHeader}"
+                        BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0"
+                        Padding="14,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Content="Отмена"
+                                Command="{Binding CancelActiveCommand}"
+                                Margin="0,0,4,0"/>
+                        <Button Grid.Column="1" Content="Применить"
+                                Style="{StaticResource AccentButton}"
+                                Command="{Binding ApplyActiveCommand}"
+                                Margin="4,0,0,0"/>
+                    </Grid>
                 </Border>
             </Grid>
-        </Border>
-
-        <!-- Right panel: split vertically -->
-        <Grid Grid.Column="1" Background="{StaticResource BgBase}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" MinHeight="150"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*" MinHeight="150"/>
-            </Grid.RowDefinitions>
-
-            <ContentControl Grid.Row="0" Content="{Binding Discovery}"/>
-
-            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
-                          Cursor="SizeNS"/>
-
-            <ContentControl Grid.Row="2" Content="{Binding BottomViewModel}"/>
         </Grid>
+
+        <!-- Status bar -->
+        <Border Grid.Row="3" Background="{StaticResource Accent}" Padding="14,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding ConnectionStatus}" Foreground="White" FontSize="11"/>
+                <TextBlock Grid.Column="1" Text="|" Foreground="#80FFFFFF" Margin="14,0" FontSize="11"/>
+                <TextBlock Grid.Column="2" Foreground="White" FontSize="11">
+                    <Run Text="Активная:"/>
+                    <Run Text="{Binding Discovery.SelectedCamera.Name, FallbackValue='—'}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="3" Text="|" Foreground="#80FFFFFF" Margin="14,0" FontSize="11"/>
+                <TextBlock Grid.Column="4" Foreground="White" FontSize="11">
+                    <Run Text="Найдено:"/>
+                    <Run Text="{Binding Discovery.Cameras.Count, Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="5" Foreground="White" FontSize="11"
+                           Margin="14,0,14,0" TextTrimming="CharacterEllipsis"
+                           Text="{Binding Discovery.StatusText, Mode=OneWay}"
+                           ToolTip="{Binding Discovery.StatusText}"/>
+                <TextBlock Grid.Column="6" Foreground="White" FontSize="11">
+                    <Run Text="{Binding ProfileText, Mode=OneWay}"/>
+                </TextBlock>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

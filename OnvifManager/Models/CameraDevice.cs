@@ -2,6 +2,13 @@ using System.Diagnostics;
 
 namespace OnvifManager.Models;
 
+public enum CameraStatus
+{
+    Online,
+    Warning,
+    Offline
+}
+
 public class CameraDevice
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -28,6 +35,29 @@ public class CameraDevice
 
     public string DisplayLabel => string.IsNullOrEmpty(Name)
         ? $"{IpAddress}:{Port}" : $"{Name} ({IpAddress})";
+
+    public CameraStatus Status
+    {
+        get
+        {
+            if (IsConnected) return CameraStatus.Online;
+            var msg = StatusMessage ?? string.Empty;
+            if (msg.Contains("auth", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("401", StringComparison.Ordinal) ||
+                msg.Contains("403", StringComparison.Ordinal) ||
+                msg.Contains("creden", StringComparison.OrdinalIgnoreCase))
+                return CameraStatus.Warning;
+            return CameraStatus.Offline;
+        }
+    }
+
+    public string Protocol => IsConnected ? "ONVIF"
+        : Status == CameraStatus.Warning ? "auth required"
+        : "offline";
+
+    public string MetaLine => string.IsNullOrEmpty(IpAddress)
+        ? Protocol
+        : $"{IpAddress} · {Protocol}";
 
     public override string ToString() =>
         $"{(string.IsNullOrEmpty(Name) ? "(unnamed)" : Name)} {IpAddress}:{Port}";

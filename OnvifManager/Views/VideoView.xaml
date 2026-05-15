@@ -1,0 +1,177 @@
+<UserControl x:Class="OnvifManager.Views.VideoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="600">
+
+    <Grid Background="{StaticResource BgInput}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Video header -->
+        <Border Grid.Row="0" Background="{StaticResource BgPanelHeader}"
+                BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1"
+                Padding="14,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Style="{StaticResource LiveBadge}">
+                        <TextBlock Text="LIVE" Foreground="White"
+                                   FontSize="10" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Margin="10,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center">
+                        <Run Text="{Binding Discovery.SelectedCamera.Name, FallbackValue='Камера не выбрана'}"/>
+                        <Run Foreground="{StaticResource TextMuted}" Text=" — Main Stream"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="Пауза"
+                            Command="{Binding StopStreamCommand}">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconPause}" Stretch="Uniform"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="Снимок"
+                            Command="{Binding SnapshotCommand}">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconSnapshot}" Stretch="Uniform"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="Запись"
+                            Command="{Binding ToggleRecordCommand}">
+                        <Ellipse Width="9" Height="9" Fill="{StaticResource Danger}"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="На весь экран">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconFullscreen}" Stretch="Uniform"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Video area (placeholder) -->
+        <Grid Grid.Row="1">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#FF1A2030" Offset="0"/>
+                    <GradientStop Color="#FF0A0C10" Offset="1"/>
+                </LinearGradientBrush>
+            </Grid.Background>
+
+            <!-- Horizon line -->
+            <Border Height="1" VerticalAlignment="Center"
+                    Background="#22FFFFFF" Margin="0,30,0,0"/>
+
+            <!-- "No signal" centered hint when no camera selected -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Visibility="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                <TextBlock Text="NO SIGNAL" FontSize="28" FontWeight="Bold"
+                           Foreground="#22FFFFFF" HorizontalAlignment="Center"/>
+                <TextBlock Text="Выберите камеру слева" FontSize="12"
+                           Foreground="{StaticResource TextDim}"
+                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <!-- OSD overlays (shown when camera is selected) -->
+            <Grid Visibility="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}}">
+                <!-- Top-left: camera ID + time -->
+                <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="14,12">
+                    <TextBlock FontFamily="Consolas" Foreground="White" FontSize="12">
+                        <Run Text="CAM 01" FontWeight="Bold"/>
+                        <Run Foreground="#CCFFFFFF" Text=" · "/>
+                        <Run Foreground="#CCFFFFFF" Text="{Binding Discovery.SelectedCamera.Name, FallbackValue=''}"/>
+                    </TextBlock>
+                    <TextBlock Text="2026-05-14 14:32:08" FontSize="11"
+                               FontFamily="Consolas" Foreground="#CCFFFFFF"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Top-right: REC + codec -->
+                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="14,12">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource Danger}"
+                                 VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="REC" Foreground="White" FontFamily="Consolas"/>
+                    </StackPanel>
+                    <TextBlock Text="H.265 · 2560×1440" FontSize="10"
+                               FontFamily="Consolas" Foreground="#B3FFFFFF"
+                               HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Bottom-left: stream info -->
+                <TextBlock HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                           Margin="14,0,0,14"
+                           Text="25 fps · 4096 kbps · stream1"
+                           FontFamily="Consolas" FontSize="11"
+                           Foreground="#CCFFFFFF"/>
+
+                <!-- Bottom-right: PTZ preset -->
+                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Margin="0,0,14,14"
+                        Background="#80000000"
+                        CornerRadius="3" Padding="8,4">
+                    <TextBlock Text="PTZ: Preset 1" Foreground="White"
+                               FontFamily="Consolas" FontSize="11"/>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Telemetry status bar -->
+        <Border Grid.Row="2" Background="{StaticResource BgPanelHeader}"
+                BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0"
+                Padding="14,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Margin="0,0,18,0" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextMuted}">
+                    <Run Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Text="FPS:"/>
+                    <Run Text=" 25.0"/>
+                </TextBlock>
+                <TextBlock Grid.Column="1" Margin="0,0,18,0" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextMuted}">
+                    <Run Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Text="Битрейт:"/>
+                    <Run Text=" 4.1 Mbps"/>
+                </TextBlock>
+                <TextBlock Grid.Column="2" Margin="0,0,18,0" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextMuted}">
+                    <Run Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Text="Разрешение:"/>
+                    <Run Text=" 2560×1440"/>
+                </TextBlock>
+                <TextBlock Grid.Column="3" Margin="0,0,18,0" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextMuted}">
+                    <Run Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Text="Кодек:"/>
+                    <Run Text=" H.265"/>
+                </TextBlock>
+                <TextBlock Grid.Column="4" Margin="0,0,18,0" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextMuted}">
+                    <Run Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Text="Задержка:"/>
+                    <Run Text=" 142 ms"/>
+                </TextBlock>
+                <TextBlock Grid.Column="5" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextMuted}" TextTrimming="CharacterEllipsis">
+                    <Run Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Text="RTSP:"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoConfig.StreamUri, FallbackValue='—'}"/>
+                </TextBlock>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

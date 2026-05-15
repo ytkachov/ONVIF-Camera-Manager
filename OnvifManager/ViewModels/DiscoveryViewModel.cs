@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OnvifManager.Models;
@@ -27,18 +29,22 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     [ObservableProperty] private ObservableCollection<CameraDevice> _cameras = new();
     [ObservableProperty] private CameraDevice? _selectedCamera;
     [ObservableProperty] private bool _isScanning;
-    [ObservableProperty] private string _statusText = "Click Scan to discover ONVIF cameras on the network";
+    [ObservableProperty] private string _statusText = "Нажмите «Поиск камер» для сканирования сети";
     [ObservableProperty] private ObservableCollection<NetworkInterfaceItem> _networkInterfaces = new();
     [ObservableProperty] private NetworkInterfaceItem? _selectedNetworkInterface;
     [ObservableProperty] private string _manualIp = "";
     [ObservableProperty] private string _manualPort = "80";
     [ObservableProperty] private string _manualUsername = "admin";
     [ObservableProperty] private string _manualPassword = "";
+    [ObservableProperty] private string _filterText = "";
+
+    public ICollectionView CamerasView { get; }
 
     public event Action? CameraSelected;
     public event Action? DeviceInfoRequested;
     public event Action? VideoConfigRequested;
     public event Action? NetworkConfigRequested;
+    public event Action? AddManualRequested;
 
     public DiscoveryViewModel(DiscoveryService discoveryService, OnvifClientProvider provider)
     {
@@ -46,7 +52,23 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
         _provider = provider;
         LoadNetworkInterfaces();
         NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+
+        CamerasView = CollectionViewSource.GetDefaultView(Cameras);
+        CamerasView.Filter = FilterCamera;
     }
+
+    private bool FilterCamera(object item)
+    {
+        if (item is not CameraDevice c) return false;
+        if (string.IsNullOrWhiteSpace(FilterText)) return true;
+        var f = FilterText.Trim();
+        return (c.Name?.Contains(f, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (c.IpAddress?.Contains(f, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (c.Model?.Contains(f, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (c.Manufacturer?.Contains(f, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    partial void OnFilterTextChanged(string value) => CamerasView.Refresh();
 
     private void OnNetworkAddressChanged(object? sender, EventArgs e)
     {
@@ -94,7 +116,7 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
         IsScanning = true;
         var target = SelectedNetworkInterface?.IpAddress;
         var targetText = string.IsNullOrEmpty(target) ? "all interfaces" : target;
-        StatusText = $"Scanning network on {targetText}...";
+        StatusText = $"Сканирование сети ({targetText})…";
 
         try
         {
@@ -106,22 +128,25 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
                 Cameras.Add(cam);
 
             StatusText = found.Count == 0
-                ? $"No ONVIF cameras found on {targetText}."
-                : $"Found {found.Count} camera(s) on {targetText}. Select one to view details.";
+                ? $"ONVIF-камер не найдено ({targetText})"
+                : $"Найдено {found.Count} камер(ы) ({targetText})";
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Scan cancelled.";
+            StatusText = "Сканирование отменено";
         }
         catch (Exception ex)
         {
-            StatusText = $"Scan error: {ex.Message}";
+            StatusText = $"Ошибка сканирования: {ex.Message}";
         }
         finally
         {
             IsScanning = false;
         }
     }
+
+    [RelayCommand]
+    private void OpenAddManual() => AddManualRequested?.Invoke();
 
     [RelayCommand]
     private async Task AddManualAsync()
@@ -131,7 +156,7 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
         var ip = ManualIp.Trim();
         var port = int.TryParse(ManualPort, out var p) ? p : 80;
 
-        StatusText = $"Probing {ip}:{port}...";
+        StatusText = $"Проверка {ip}:{port}…";
 
         try
         {
@@ -145,12 +170,12 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
             Cameras.Add(camera);
             SelectedCamera = camera;
             StatusText = camera.IsConnected
-                ? $"Added camera {ip}:{port}"
-                : $"Added {ip}:{port} (probe: {camera.StatusMessage})";
+                ? $"Добавлена камера {ip}:{port}"
+                : $"Добавлено {ip}:{port} ({camera.StatusMessage})";
         }
         catch (Exception ex)
         {
-            StatusText = $"Add error: {ex.Message}";
+            StatusText = $"Ошибка: {ex.Message}";
         }
     }
 
