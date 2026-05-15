@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -6,11 +6,42 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\seagull.ico</ApplicationIcon>
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\seagull.ico" />
+    <Resource Include="Assets\splash.png" />
+    <Resource Include="Assets\Icons\seagull-16.png" />
+    <Resource Include="Assets\Icons\seagull-20.png" />
+    <Resource Include="Assets\Icons\seagull-24.png" />
+    <Resource Include="Assets\Icons\seagull-32.png" />
+    <Resource Include="Assets\Icons\seagull-40.png" />
+    <Resource Include="Assets\Icons\seagull-48.png" />
+    <Resource Include="Assets\Icons\seagull-64.png" />
+    <Resource Include="Assets\Icons\seagull-96.png" />
+    <Resource Include="Assets\Icons\seagull-128.png" />
+    <Resource Include="Assets\Icons\seagull-256.png" />
+    <Resource Include="Assets\Icons\seagull.svg" />
+    <Resource Include="Assets\Icons\seagull-square.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

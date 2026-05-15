@@ -7,8 +7,8 @@
              d:DesignHeight="500" d:DesignWidth="340">
 
     <UserControl.Resources>
-        <Style x:Key="ParamLabel" TargetType="TextBlock" BasedOn="{StaticResource FormLabel}">
-            <Setter Property="Width" Value="115"/>
+        <Style x:Key="Row" TargetType="Grid">
+            <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
     </UserControl.Resources>
 
@@ -29,30 +29,54 @@
                     <TextBlock Text="ИДЕНТИФИКАЦИЯ" Style="{StaticResource SectionTitle}"/>
                     <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="Имя" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding Name}" IsReadOnly="True" Width="195"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="Производитель" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding Manufacturer}" IsReadOnly="True" Width="195"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="Модель" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding Model}" IsReadOnly="True" Width="195"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="Прошивка" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding FirmwareVersion}" IsReadOnly="True" Width="195"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="Серийный №" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding SerialNumber}" IsReadOnly="True" Width="195"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Hardware ID" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding HardwareId}" IsReadOnly="True" Width="195"/>
-                    </StackPanel>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Имя" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding Name}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Производитель" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding Manufacturer}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Модель" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding Model}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Прошивка" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding FirmwareVersion}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Серийный №" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding SerialNumber}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Hardware ID" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding HardwareId}" IsReadOnly="True"/>
+                    </Grid>
                 </StackPanel>
 
                 <!-- ONVIF -->
@@ -60,11 +84,15 @@
                     <TextBlock Text="ONVIF" Style="{StaticResource SectionTitle}"/>
                     <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="Сервис URL" Style="{StaticResource ParamLabel}"/>
-                        <TextBox Text="{Binding Endpoint}" IsReadOnly="True" Width="195"
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Сервис URL" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding Endpoint}" IsReadOnly="True"
                                  TextWrapping="NoWrap"/>
-                    </StackPanel>
+                    </Grid>
                 </StackPanel>
 
                 <!-- Profiles -->

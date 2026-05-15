@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using OnvifManager.Services;
 using OnvifManager.ViewModels;
@@ -13,6 +14,10 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        var splash = new SplashWindow();
+        splash.Show();
+        var splashShownAt = DateTime.UtcNow;
 
         var services = new ServiceCollection();
 
@@ -38,7 +43,28 @@ public partial class App : Application
         _serviceProvider = services.BuildServiceProvider();
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Loaded += (_, _) => CloseSplash(splash, splashShownAt);
         mainWindow.Show();
+    }
+
+    private static void CloseSplash(SplashWindow splash, DateTime shownAt)
+    {
+        var elapsed = DateTime.UtcNow - shownAt;
+        var remaining = TimeSpan.FromMilliseconds(1200) - elapsed;
+        if (remaining > TimeSpan.Zero)
+        {
+            var timer = new DispatcherTimer { Interval = remaining };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                splash.Close();
+            };
+            timer.Start();
+        }
+        else
+        {
+            splash.Close();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

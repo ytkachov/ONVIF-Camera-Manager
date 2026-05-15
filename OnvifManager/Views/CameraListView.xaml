@@ -64,6 +64,13 @@
                  SelectedItem="{Binding SelectedCamera}"
                  ItemContainerStyle="{StaticResource CameraListItem}"
                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListBox.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Удалить из списка"
+                              Command="{Binding PlacementTarget.DataContext.RemoveCameraCommand,
+                                                RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                </ContextMenu>
+            </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Grid Margin="12,10">

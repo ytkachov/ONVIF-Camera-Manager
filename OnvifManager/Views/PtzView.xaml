@@ -20,10 +20,14 @@
                 <TextBlock Text="ВОЗМОЖНОСТИ PTZ" Style="{StaticResource SectionTitle}"/>
                 <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Поддержка" Style="{StaticResource ParamLabel}"/>
-                    <TextBox Text="{Binding Capabilities}" IsReadOnly="True" Width="200"/>
-                </StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Поддержка" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Capabilities}" IsReadOnly="True"/>
+                </Grid>
 
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -76,18 +80,30 @@
                 <TextBlock Text="ПРЕСЕТЫ" Style="{StaticResource SectionTitle}"/>
                 <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Preset 1" Style="{StaticResource ParamLabel}"/>
-                    <TextBox Text="{Binding Preset1}" Width="195"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Preset 2" Style="{StaticResource ParamLabel}"/>
-                    <TextBox Text="{Binding Preset2}" Width="195"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Preset 3" Style="{StaticResource ParamLabel}"/>
-                    <TextBox Text="{Binding Preset3}" Width="195"/>
-                </StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Preset 1" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Preset1}"/>
+                </Grid>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Preset 2" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Preset2}"/>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Preset 3" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Preset3}"/>
+                </Grid>
             </StackPanel>
 
             <!-- Patrol -->
@@ -99,10 +115,14 @@
                     <TextBlock Text="Включено" Style="{StaticResource ParamLabel}"/>
                     <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding PatrolEnabled}"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Задержка, с" Style="{StaticResource ParamLabel}"/>
-                    <TextBox Text="{Binding PatrolDelay}" Width="80"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="115"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Задержка, с" Style="{StaticResource FormLabel}"/>
+                    <TextBox Grid.Column="1" Text="{Binding PatrolDelay}" HorizontalAlignment="Left" MinWidth="80"/>
+                </Grid>
             </StackPanel>
 
             <TextBlock Text="{Binding StatusText}"

@@ -1,0 +1,133 @@
+<Window x:Class="OnvifManager.Views.LogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="SOAP log — SeaGull"
+        Width="900" Height="600"
+        Background="{StaticResource BgBase}"
+        ShowInTaskbar="True"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Icon="/Assets/seagull.ico">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="32"
+                            ResizeBorderThickness="6"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Border BorderBrush="{StaticResource BorderStrong}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Custom title strip -->
+            <Border Grid.Row="0" Background="{StaticResource BgPanelHeader}"
+                    BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10,0,12,0"
+                                VerticalAlignment="Center">
+                        <Path Width="14" Height="14" Stretch="Uniform"
+                              Fill="{StaticResource TextSecondary}"
+                              Data="{StaticResource IconLog}"
+                              shell:WindowChrome.IsHitTestVisibleInChrome="False"/>
+                        <TextBlock Text="Журнал SOAP — SeaGull"
+                                   Margin="8,0,0,0"
+                                   Foreground="{StaticResource TextPrimary}"
+                                   FontWeight="SemiBold" FontSize="12"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource TitlebarButton}"
+                                Click="Minimize_Click" ToolTip="Свернуть">
+                            <Path Data="M 0 5 L 10 5" Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                  StrokeThickness="1" Width="10" Height="10" Stretch="None"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Style="{StaticResource TitlebarButton}"
+                                x:Name="MaxRestoreBtn"
+                                Click="MaxRestore_Click" ToolTip="Развернуть">
+                            <Path x:Name="MaxRestoreGlyph"
+                                  Data="M 0 0 L 10 0 L 10 10 L 0 10 Z"
+                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                  StrokeThickness="1" Width="10" Height="10" Stretch="None"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Style="{StaticResource TitlebarCloseButton}"
+                                Click="Close_Click" ToolTip="Закрыть">
+                            <Path Data="M 0 0 L 10 10 M 10 0 L 0 10"
+                                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                  StrokeThickness="1" Width="10" Height="10" Stretch="None"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Action bar -->
+            <Border Grid.Row="1" Background="{StaticResource BgPanelHeader}"
+                    BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1"
+                    Padding="14,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="PathText" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMuted}" FontSize="11"
+                               FontFamily="{StaticResource MonoFont}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <Button Grid.Column="1" Content="Открыть папку"
+                            Click="OpenFolder_Click" Margin="0,0,6,0"/>
+                    <Button Grid.Column="2" Content="Очистить"
+                            Click="Clear_Click" Margin="0,0,6,0"/>
+                    <Button Grid.Column="3" Content="Обновить"
+                            Style="{StaticResource AccentButton}"
+                            Click="Refresh_Click"/>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="2" x:Name="Scroller"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="14,10">
+                <TextBox x:Name="LogText"
+                         IsReadOnly="True"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Foreground="{StaticResource TextPrimary}"
+                         FontFamily="{StaticResource MonoFont}"
+                         FontSize="11"
+                         TextWrapping="NoWrap"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Disabled"
+                         HorizontalScrollBarVisibility="Disabled"/>
+            </ScrollViewer>
+
+            <Border Grid.Row="3" Background="{StaticResource BgPanelHeader}"
+                    BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0"
+                    Padding="14,6">
+                <CheckBox x:Name="AutoRefresh" Content="Авто-обновление (1 сек)"
+                          Foreground="{StaticResource TextSecondary}"
+                          FontSize="11"
+                          Checked="AutoRefresh_Changed"
+                          Unchecked="AutoRefresh_Changed"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

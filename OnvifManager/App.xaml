@@ -10,6 +10,7 @@
 
             <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
             <conv:InverseBoolConverter x:Key="InverseBool"/>
+            <conv:StringToVisibilityConverter x:Key="StringToVis"/>
             <conv:CameraStatusToBrushConverter x:Key="CameraStatusBrush"/>
         </ResourceDictionary>
     </Application.Resources>

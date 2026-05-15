@@ -12,14 +12,18 @@ public partial class ManualAddDialog : Window
         InitializeComponent();
         _vm = vm;
         DataContext = vm;
+        _vm.LastProbeError = "";
     }
 
     private async void Add_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_vm.ManualIp)) return;
-        await _vm.AddManualCommand.ExecuteAsync(null);
-        DialogResult = true;
-        Close();
+        if (_vm.IsProbing) return;
+        var ok = await _vm.TryAddManualAsync();
+        if (ok)
+        {
+            DialogResult = true;
+            Close();
+        }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)

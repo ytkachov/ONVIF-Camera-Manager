@@ -37,6 +37,8 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _manualUsername = "admin";
     [ObservableProperty] private string _manualPassword = "";
     [ObservableProperty] private string _filterText = "";
+    [ObservableProperty] private bool _isProbing;
+    [ObservableProperty] private string _lastProbeError = "";
 
     public ICollectionView CamerasView { get; }
 
@@ -148,36 +150,70 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenAddManual() => AddManualRequested?.Invoke();
 
-    [RelayCommand]
-    private async Task AddManualAsync()
+    public async Task<bool> TryAddManualAsync(CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(ManualIp)) return;
+        LastProbeError = "";
+        if (string.IsNullOrWhiteSpace(ManualIp))
+        {
+            LastProbeError = "Укажите IP-адрес";
+            return false;
+        }
 
         var ip = ManualIp.Trim();
         var port = int.TryParse(ManualPort, out var p) ? p : 80;
 
+        var dup = Cameras.FirstOrDefault(c => c.IpAddress == ip && c.Port == port);
+        if (dup != null)
+        {
+            LastProbeError = $"Камера {ip}:{port} уже в списке";
+            SelectedCamera = dup;
+            return false;
+        }
+
+        IsProbing = true;
         StatusText = $"Проверка {ip}:{port}…";
 
         try
         {
-            var camera = await _discoveryService.ProbeUnicastAsync(ip, port, ManualUsername, ManualPassword);
+            var camera = await _discoveryService.ProbeUnicastAsync(ip, port, ManualUsername, ManualPassword, ct);
 
-            if (camera.IsConnected && !string.IsNullOrEmpty(camera.Manufacturer))
+            if (!camera.IsConnected)
+            {
+                LastProbeError = camera.StatusMessage;
+                StatusText = $"Не удалось добавить {ip}:{port} — {camera.StatusMessage}";
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(camera.Manufacturer))
                 camera.Name = $"{camera.Manufacturer} {camera.Model} ({ip})";
             else if (string.IsNullOrEmpty(camera.Name))
                 camera.Name = $"Manual: {ip}:{port}";
 
             Cameras.Add(camera);
             SelectedCamera = camera;
-            StatusText = camera.IsConnected
-                ? $"Добавлена камера {ip}:{port}"
-                : $"Добавлено {ip}:{port} ({camera.StatusMessage})";
+            StatusText = $"Добавлена камера {ip}:{port}";
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            LastProbeError = "Отменено";
+            StatusText = "Добавление отменено";
+            return false;
         }
         catch (Exception ex)
         {
+            LastProbeError = ex.Message;
             StatusText = $"Ошибка: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            IsProbing = false;
         }
     }
+
+    [RelayCommand]
+    private Task AddManualAsync() => TryAddManualAsync();
 
     [RelayCommand]
     private void ViewDeviceInfo()

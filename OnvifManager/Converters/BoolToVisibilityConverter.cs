@@ -35,3 +35,17 @@ public class InverseBoolConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         value is not true;
 }
+
+public class StringToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var has = value is string s && !string.IsNullOrEmpty(s);
+        var invert = parameter is string p && p == "Invert";
+        var visible = invert ? !has : has;
+        return visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        Binding.DoNothing;
+}
