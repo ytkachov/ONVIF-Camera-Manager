@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OnvifManager.Core\OnvifManager.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Assets\seagull.ico" />
     <Resource Include="Assets\splash.png" />
     <Resource Include="Assets\Icons\seagull-16.png" />

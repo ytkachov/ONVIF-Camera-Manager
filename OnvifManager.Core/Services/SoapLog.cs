@@ -4,7 +4,7 @@ using System.Text;
 
 namespace OnvifManager.Services;
 
-internal static class SoapLog
+public static class SoapLog
 {
     public static readonly string FilePath = System.IO.Path.Combine(
         System.IO.Path.GetTempPath(), "OnvifManager", "soap.log");
