@@ -96,6 +96,45 @@
                     </Grid>
                 </StackPanel>
 
+                <!-- Время -->
+                <StackPanel Margin="0,0,0,16">
+                    <TextBlock Text="ВРЕМЯ" Style="{StaticResource SectionTitle}"/>
+                    <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Часовой пояс" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding TimeZone}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Время (UTC)" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding CameraTimeUtc}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid Style="{StaticResource Row}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Локальное" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding CameraTimeLocal}" IsReadOnly="True"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="115"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Источник" Style="{StaticResource FormLabel}"/>
+                        <TextBox Grid.Column="1" Text="{Binding TimeSyncSource}" IsReadOnly="True"/>
+                    </Grid>
+                </StackPanel>
+
                 <!-- Profiles -->
                 <StackPanel Margin="0,0,0,16">
                     <TextBlock Text="МЕДИА-ПРОФИЛИ" Style="{StaticResource SectionTitle}"/>

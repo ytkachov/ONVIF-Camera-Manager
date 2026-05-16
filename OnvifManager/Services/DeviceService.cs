@@ -162,12 +162,13 @@ public class DeviceService
 
         foreach (var iface in response.Elements().Where(e => e.Name.LocalName == "NetworkInterfaces"))
         {
+            var info = iface.Elements().FirstOrDefault(e => e.Name.LocalName == "Info");
             var ni = new NetworkInterfaceInfo
             {
                 Token = iface.Attribute("token")?.Value ?? "",
                 Enabled = ParseBool(LocalValue(iface, "Enabled"), true),
-                HwAddress = LocalValue(iface, "HwAddress"),
-                Mtu = ParseInt(LocalValue(iface, "MTU"), 1500)
+                HwAddress = info != null ? LocalValue(info, "HwAddress") : string.Empty,
+                Mtu = ParseInt(info != null ? LocalValue(info, "MTU") : null, 1500)
             };
 
             var ipv4 = iface.Elements().FirstOrDefault(e => e.Name.LocalName == "IPv4");
@@ -192,19 +193,105 @@ public class DeviceService
                 }
             }
 
-            var dns = iface.Elements().FirstOrDefault(e => e.Name.LocalName == "DNS");
-            if (dns != null)
-            {
-                foreach (var dnsManual in dns.Elements().Where(e => e.Name.LocalName == "DNSManual"))
-                foreach (var addr in dnsManual.Elements().Where(e => e.Name.LocalName == "IPv4Address"))
-                    if (!string.IsNullOrEmpty(addr.Value))
-                        ni.DnsServers.Add(addr.Value);
-            }
-
             interfaces.Add(ni);
         }
 
         return interfaces;
+    }
+
+    public async Task<DnsInfo> GetDnsAsync(CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "GetDNS");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetDNS", body, ct);
+
+        var info = SoapMessageParser.ParseBody(doc)
+            .Descendants().FirstOrDefault(e => e.Name.LocalName == "DNSInformation");
+        var dns = new DnsInfo();
+        if (info == null) return dns;
+
+        dns.FromDhcp = ParseBool(LocalValue(info, "FromDHCP"), false);
+
+        foreach (var server in info.Elements().Where(e => e.Name.LocalName == "DNSManual"))
+        {
+            var addr = LocalValue(server, "IPv4Address");
+            if (!string.IsNullOrEmpty(addr)) dns.Manual.Add(addr);
+        }
+
+        foreach (var server in info.Elements().Where(e => e.Name.LocalName == "DNSFromDHCP"))
+        {
+            var addr = LocalValue(server, "IPv4Address");
+            if (!string.IsNullOrEmpty(addr)) dns.FromDhcpServers.Add(addr);
+        }
+
+        return dns;
+    }
+
+    public async Task<NtpInfo> GetNtpAsync(CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "GetNTP");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetNTP", body, ct);
+
+        var info = SoapMessageParser.ParseBody(doc)
+            .Descendants().FirstOrDefault(e => e.Name.LocalName == "NTPInformation");
+        var ntp = new NtpInfo();
+        if (info == null) return ntp;
+
+        ntp.FromDhcp = ParseBool(LocalValue(info, "FromDHCP"), false);
+
+        foreach (var server in info.Elements()
+                     .Where(e => e.Name.LocalName == "NTPManual" || e.Name.LocalName == "NTPFromDHCP"))
+        {
+            var host = LocalValue(server, "DNSname");
+            if (string.IsNullOrEmpty(host)) host = LocalValue(server, "IPv4Address");
+            if (string.IsNullOrEmpty(host)) continue;
+            if (server.Name.LocalName == "NTPManual") ntp.Manual.Add(host);
+            else ntp.FromDhcpServers.Add(host);
+        }
+
+        return ntp;
+    }
+
+    public async Task<SystemDateTimeInfo> GetSystemDateAndTimeAsync(CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "GetSystemDateAndTime");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/GetSystemDateAndTime", body, ct);
+
+        var sdt = SoapMessageParser.ParseBody(doc)
+            .Descendants().FirstOrDefault(e => e.Name.LocalName == "SystemDateAndTime");
+        var result = new SystemDateTimeInfo();
+        if (sdt == null) return result;
+
+        result.SyncSource = LocalValue(sdt, "DateTimeType");
+        result.DaylightSavings = ParseBool(LocalValue(sdt, "DaylightSavings"), false);
+
+        var tz = sdt.Elements().FirstOrDefault(e => e.Name.LocalName == "TimeZone");
+        if (tz != null) result.TimeZone = LocalValue(tz, "TZ");
+
+        var utc = sdt.Elements().FirstOrDefault(e => e.Name.LocalName == "UTCDateTime");
+        if (utc != null) result.Utc = ParseDateTime(utc);
+
+        var local = sdt.Elements().FirstOrDefault(e => e.Name.LocalName == "LocalDateTime");
+        if (local != null) result.Local = ParseDateTime(local);
+
+        return result;
+    }
+
+    private static DateTime? ParseDateTime(XElement el)
+    {
+        var date = el.Elements().FirstOrDefault(e => e.Name.LocalName == "Date");
+        var time = el.Elements().FirstOrDefault(e => e.Name.LocalName == "Time");
+        if (date == null || time == null) return null;
+        if (!int.TryParse(LocalValue(date, "Year"), out var y)) return null;
+        if (!int.TryParse(LocalValue(date, "Month"), out var mo)) return null;
+        if (!int.TryParse(LocalValue(date, "Day"), out var d)) return null;
+        if (!int.TryParse(LocalValue(time, "Hour"), out var h)) return null;
+        if (!int.TryParse(LocalValue(time, "Minute"), out var mi)) return null;
+        if (!int.TryParse(LocalValue(time, "Second"), out var s)) return null;
+        try { return new DateTime(y, mo, d, h, mi, s, DateTimeKind.Utc); }
+        catch { return null; }
     }
 
     public async Task SetNetworkInterfacesAsync(NetworkInterfaceInfo ni, CancellationToken ct = default)

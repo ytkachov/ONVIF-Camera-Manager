@@ -132,7 +132,7 @@ public class MediaService
             Token = cfg.Attribute("token")?.Value ?? "",
             Name = LocalValue(cfg, "Name"),
             Encoding = string.IsNullOrEmpty(LocalValue(cfg, "Encoding")) ? "H264" : LocalValue(cfg, "Encoding"),
-            UseCount = ParseInt(cfg.Attribute("UseCount")?.Value, 0)
+            UseCount = ParseInt(LocalValue(cfg, "UseCount"), 0)
         };
 
         var resolution = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "Resolution");

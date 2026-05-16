@@ -95,7 +95,38 @@
                 <TextBlock Text="DNS" Style="{StaticResource SectionTitle}"/>
                 <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Width="115" Text="Из DHCP" Style="{StaticResource FormLabel}"/>
+                    <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding DnsFromDhcp}"
+                              IsEnabled="False"/>
+                </StackPanel>
+
                 <ItemsControl ItemsSource="{Binding DnsServers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource BgElevated}" CornerRadius="4"
+                                    Padding="10,5" Margin="0,0,0,4">
+                                <TextBlock Text="{Binding}"
+                                           Foreground="{StaticResource Link}"
+                                           FontSize="11" FontFamily="Consolas"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- NTP -->
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="NTP" Style="{StaticResource SectionTitle}"/>
+                <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Width="115" Text="Из DHCP" Style="{StaticResource FormLabel}"/>
+                    <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding NtpFromDhcp}"
+                              IsEnabled="False"/>
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding NtpServers}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{StaticResource BgElevated}" CornerRadius="4"

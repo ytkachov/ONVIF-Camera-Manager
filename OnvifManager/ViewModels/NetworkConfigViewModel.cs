@@ -24,6 +24,9 @@ public partial class NetworkConfigViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _hwAddress = "";
     [ObservableProperty] private int _mtu = 1500;
     [ObservableProperty] private ObservableCollection<string> _dnsServers = new();
+    [ObservableProperty] private bool _dnsFromDhcp;
+    [ObservableProperty] private ObservableCollection<string> _ntpServers = new();
+    [ObservableProperty] private bool _ntpFromDhcp;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _statusText = "";
 
@@ -63,6 +66,24 @@ public partial class NetworkConfigViewModel : ObservableObject, IDisposable
                 SelectedInterface = interfaces[0];
                 LoadInterfaceIntoFields(interfaces[0]);
             }
+
+            try
+            {
+                var dns = await deviceService.GetDnsAsync(ct);
+                DnsFromDhcp = dns.FromDhcp;
+                DnsServers = new ObservableCollection<string>(dns.Effective);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { DnsServers = new ObservableCollection<string>(); }
+
+            try
+            {
+                var ntp = await deviceService.GetNtpAsync(ct);
+                NtpFromDhcp = ntp.FromDhcp;
+                NtpServers = new ObservableCollection<string>(ntp.Effective);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { NtpServers = new ObservableCollection<string>(); }
 
             StatusText = "Network configuration loaded";
         }

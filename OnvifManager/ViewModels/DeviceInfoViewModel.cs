@@ -21,6 +21,10 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _hardwareId = "";
     [ObservableProperty] private string _name = "";
     [ObservableProperty] private string _endpoint = "";
+    [ObservableProperty] private string _timeZone = "";
+    [ObservableProperty] private string _cameraTimeUtc = "";
+    [ObservableProperty] private string _cameraTimeLocal = "";
+    [ObservableProperty] private string _timeSyncSource = "";
     [ObservableProperty] private ObservableCollection<OnvifServiceUri> _services = new();
     [ObservableProperty] private ObservableCollection<CameraProfile> _profiles = new();
     [ObservableProperty] private bool _isLoading;
@@ -103,6 +107,22 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             else
             {
                 Name = _camera.Name;
+            }
+
+            try
+            {
+                var t = await deviceService.GetSystemDateAndTimeAsync(ct);
+                TimeZone = t.TimeZone;
+                TimeSyncSource = t.SyncSource;
+                CameraTimeUtc = t.Utc?.ToString("yyyy-MM-dd HH:mm:ss") + " UTC" ?? "";
+                CameraTimeLocal = t.Local?.ToString("yyyy-MM-dd HH:mm:ss") ?? "";
+            }
+            catch (OperationCanceledException) { throw; }
+            catch
+            {
+                TimeZone = "";
+                CameraTimeUtc = "";
+                CameraTimeLocal = "";
             }
 
             await deviceService.GetServicesAsync(ct);
