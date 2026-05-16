@@ -13,10 +13,6 @@ public class HikvisionIsapiService
 
     public HikvisionIsapiService(OnvifClient client) => _client = client;
 
-    public static bool Matches(CameraDevice camera) =>
-        !string.IsNullOrEmpty(camera?.Manufacturer)
-        && camera!.Manufacturer.Contains("HIKVISION", StringComparison.OrdinalIgnoreCase);
-
     public async Task<string> GetDeviceNameAsync(CancellationToken ct = default)
     {
         var uri = $"{_client.Camera.Endpoint}:{_client.Camera.Port}{DeviceInfoPath}";

@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Xml.Linq;
 using OnvifManager.Models;
+using OnvifManager.Vendors;
 
 namespace OnvifManager.Services;
 
@@ -11,8 +12,13 @@ public class DiscoveryService
 {
     private const int DiscoveryTimeoutMs = 5000;
     private readonly OnvifClientProvider _provider;
+    private readonly VendorRegistry _vendors;
 
-    public DiscoveryService(OnvifClientProvider provider) => _provider = provider;
+    public DiscoveryService(OnvifClientProvider provider, VendorRegistry? vendors = null)
+    {
+        _provider = provider;
+        _vendors = vendors ?? VendorRegistry.Empty;
+    }
 
     public async Task<List<CameraDevice>> DiscoverAsync(string? localIp = null,
         CancellationToken ct = default)
@@ -86,18 +92,10 @@ public class DiscoveryService
             var deviceService = new DeviceService(client);
             await deviceService.GetDeviceInformationAsync(ct);
 
-            if (HikvisionIsapiService.Matches(camera))
-            {
-                try
-                {
-                    var isapi = new HikvisionIsapiService(client);
-                    var hikName = await isapi.GetDeviceNameAsync(ct);
-                    if (!string.IsNullOrWhiteSpace(hikName))
-                        camera.Name = hikName.Trim();
-                }
-                catch (OperationCanceledException) { throw; }
-                catch { }
-            }
+            var adapter = _vendors.For(camera);
+            var vendorName = await adapter.GetFriendlyNameAsync(client, ct);
+            if (!string.IsNullOrWhiteSpace(vendorName))
+                camera.Name = vendorName;
 
             if (string.IsNullOrEmpty(camera.Name))
             {

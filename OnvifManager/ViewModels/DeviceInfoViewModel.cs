@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OnvifManager.Models;
 using OnvifManager.Services;
+using OnvifManager.Vendors;
 
 namespace OnvifManager.ViewModels;
 
@@ -10,6 +11,7 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
 {
     private readonly DiscoveryViewModel _discovery;
     private readonly OnvifClientProvider _provider;
+    private readonly VendorRegistry _vendors;
     private CancellationTokenSource? _loadCts;
     private CameraDevice? _camera;
     private bool _disposed;
@@ -30,10 +32,11 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _statusText = "";
 
-    public DeviceInfoViewModel(DiscoveryViewModel discovery, OnvifClientProvider provider)
+    public DeviceInfoViewModel(DiscoveryViewModel discovery, OnvifClientProvider provider, VendorRegistry vendors)
     {
         _discovery = discovery;
         _provider = provider;
+        _vendors = vendors;
         _discovery.CameraSelected += OnCameraChanged;
     }
 
@@ -77,17 +80,14 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             Endpoint = _camera.Endpoint;
 
             string resolvedName = string.Empty;
+            var adapter = _vendors.For(_camera);
 
-            if (HikvisionIsapiService.Matches(_camera))
+            try
             {
-                try
-                {
-                    var isapi = new HikvisionIsapiService(client);
-                    resolvedName = (await isapi.GetDeviceNameAsync(ct)).Trim();
-                }
-                catch (OperationCanceledException) { throw; }
-                catch { }
+                resolvedName = (await adapter.GetFriendlyNameAsync(client, ct))?.Trim() ?? string.Empty;
             }
+            catch (OperationCanceledException) { throw; }
+            catch { }
 
             if (string.IsNullOrEmpty(resolvedName))
             {
@@ -172,18 +172,15 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             var client = _provider.Get(_camera);
             var deviceService = new DeviceService(client);
 
-            if (HikvisionIsapiService.Matches(_camera))
+            var adapter = _vendors.For(_camera);
+            try
             {
-                try
-                {
-                    var isapi = new HikvisionIsapiService(client);
-                    await isapi.SetDeviceNameAsync(newName, ct);
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    StatusText = $"Hikvision ISAPI: {ex.Message}";
-                }
+                await adapter.SetFriendlyNameAsync(client, newName, ct);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                StatusText = $"{adapter.Vendor}: {ex.Message}";
             }
 
             await deviceService.SetDeviceNameAsync(newName, ct);

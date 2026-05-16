@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using OnvifManager.Services;
+using OnvifManager.Vendors;
 using OnvifManager.ViewModels;
 using OnvifManager.Views;
 
@@ -27,6 +28,9 @@ public partial class App : Application
             Timeout = TimeSpan.FromSeconds(30)
         });
         services.AddSingleton<OnvifClientProvider>();
+
+        services.AddSingleton<IVendorAdapter, HikvisionVendorAdapter>();
+        services.AddSingleton<VendorRegistry>();
 
         services.AddSingleton<DiscoveryService>();
 
