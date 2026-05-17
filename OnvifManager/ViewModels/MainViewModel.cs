@@ -1,6 +1,9 @@
+using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OnvifManager.Services;
 
 namespace OnvifManager.ViewModels;
 
@@ -27,6 +30,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public PtzViewModel Ptz { get; }
     public EventsViewModel Events { get; }
 
+    private readonly SnapshotService _snapshot;
+    private readonly OnvifClientProvider _provider;
     private bool _disposed;
 
     public MainViewModel(
@@ -35,7 +40,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         VideoConfigViewModel videoConfig,
         NetworkConfigViewModel networkConfig,
         PtzViewModel ptz,
-        EventsViewModel events)
+        EventsViewModel events,
+        SnapshotService snapshot,
+        OnvifClientProvider provider)
     {
         Discovery = discovery;
         DeviceInfo = deviceInfo;
@@ -43,6 +50,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         NetworkConfig = networkConfig;
         Ptz = ptz;
         Events = events;
+        _snapshot = snapshot;
+        _provider = provider;
 
         Discovery.CameraSelected += OnCameraSelected;
         Discovery.DeviceInfoRequested += () => SelectedTab = ParamTab.Info;
@@ -80,10 +89,83 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void StopStream() => ReadyText = "Стоп потока (заглушка)";
 
     [RelayCommand]
-    private void Snapshot() => ReadyText = "Снимок сохранён (заглушка)";
+    private async Task SnapshotAsync()
+    {
+        var camera = Discovery.SelectedCamera;
+        if (camera == null)
+        {
+            ReadyText = "Сначала выберите камеру";
+            return;
+        }
+
+        var profileToken = VideoConfig.SelectedProfile?.Token
+                           ?? camera.Profiles.FirstOrDefault()?.Token;
+
+        ReadyText = "Снимок…";
+        try
+        {
+            if (string.IsNullOrEmpty(profileToken))
+            {
+                var media = new MediaService(_provider.Get(camera));
+                var profiles = await media.GetProfilesAsync();
+                profileToken = profiles.FirstOrDefault()?.Token;
+            }
+            if (string.IsNullOrEmpty(profileToken))
+                throw new InvalidOperationException("У камеры нет media profile");
+
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                "OnvifManager");
+            var result = await _snapshot.CaptureAsync(camera, profileToken, dir);
+            ReadyText = $"Снимок сохранён: {Path.GetFileName(result.Path)}";
+            Discovery.StatusText = $"Снимок: {result.Path} ({result.Bytes / 1024} KB)";
+        }
+        catch (OperationCanceledException) { ReadyText = "Снимок отменён"; }
+        catch (Exception ex)
+        {
+            ReadyText = $"Ошибка снимка: {ex.Message}";
+            Discovery.StatusText = $"Ошибка снимка: {ex.Message}";
+        }
+    }
 
     [RelayCommand]
     private void ToggleRecord() => ReadyText = "Запись (заглушка)";
+
+    [RelayCommand]
+    private async Task RebootCameraAsync()
+    {
+        var camera = Discovery.SelectedCamera;
+        if (camera == null || !camera.IsConnected)
+        {
+            ReadyText = "Сначала выберите подключённую камеру";
+            return;
+        }
+
+        var name = string.IsNullOrEmpty(camera.Name) ? camera.IpAddress : camera.Name;
+        var confirm = MessageBox.Show(
+            $"Перезагрузить камеру «{name}»?\nСвязь оборвётся примерно на 1–2 минуты.",
+            "Перезагрузка камеры",
+            MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel);
+        if (confirm != MessageBoxResult.OK) return;
+
+        ReadyText = "Перезагрузка камеры…";
+        try
+        {
+            var client = _provider.Get(camera);
+            var device = new DeviceService(client);
+            var reply = await device.RebootAsync();
+            camera.IsConnected = false;
+            camera.StatusMessage = "Reboot requested";
+            ConnectionStatus = "● Не подключено";
+            Discovery.StatusText = $"Перезагрузка «{name}»: {reply}";
+            ReadyText = "Камера перезагружается";
+        }
+        catch (Exception ex)
+        {
+            ReadyText = $"Ошибка перезагрузки: {ex.Message}";
+            Discovery.StatusText = $"Ошибка перезагрузки: {ex.Message}";
+        }
+    }
 
     [RelayCommand]
     private void OpenSettings() => ReadyText = "Настройки (заглушка)";

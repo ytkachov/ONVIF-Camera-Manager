@@ -33,6 +33,7 @@ public partial class App : Application
         services.AddSingleton<VendorRegistry>();
 
         services.AddSingleton<DiscoveryService>();
+        services.AddSingleton<SnapshotService>();
 
         services.AddSingleton<DiscoveryViewModel>();
         services.AddSingleton<DeviceInfoViewModel>();

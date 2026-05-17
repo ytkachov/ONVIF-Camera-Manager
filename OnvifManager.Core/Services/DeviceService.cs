@@ -51,6 +51,17 @@ public class DeviceService
             "http://www.onvif.org/ver10/device/wsdl/SetHostname", body, ct);
     }
 
+    public async Task<string> RebootAsync(CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttds + "SystemReboot");
+        var doc = await _client.SendSoapAsync(OnvifXml.DeviceServicePath,
+            "http://www.onvif.org/ver10/device/wsdl/SystemReboot", body, ct);
+
+        var msg = SoapMessageParser.ParseBody(doc)
+            .Descendants().FirstOrDefault(e => e.Name.LocalName == "Message")?.Value;
+        return msg?.Trim() ?? "Rebooting";
+    }
+
     public async Task<List<string>> GetScopesAsync(CancellationToken ct = default)
     {
         var body = new XElement(OnvifXml.Ttds + "GetScopes");

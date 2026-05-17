@@ -65,6 +65,9 @@
                         <MenuItem Header="_Камеры">
                             <MenuItem Header="Поиск" Command="{Binding ScanCommand}"/>
                             <MenuItem Header="Добавить вручную…" Command="{Binding AddManualCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="Перезагрузить камеру…"
+                                      Command="{Binding RebootCameraCommand}"/>
                         </MenuItem>
                         <MenuItem Header="_Запись"/>
                         <MenuItem Header="_Инструменты">

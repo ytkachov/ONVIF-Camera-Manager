@@ -125,6 +125,22 @@ public class MediaService
         return mediaUri?.Elements().FirstOrDefault(e => e.Name.LocalName == "Uri")?.Value ?? "";
     }
 
+    public async Task<string> GetSnapshotUriAsync(string profileToken, CancellationToken ct = default)
+    {
+        var body = new XElement(OnvifXml.Ttrt + "GetSnapshotUri",
+            new XElement(OnvifXml.Ttrt + "ProfileToken", profileToken));
+
+        var doc = await _client.SendSoapAsync(OnvifXml.MediaServicePath,
+            "http://www.onvif.org/ver10/media/wsdl/GetSnapshotUri", body, ct);
+
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetSnapshotUriResponse");
+        if (response == null) return "";
+
+        var mediaUri = response.Elements().FirstOrDefault(e => e.Name.LocalName == "MediaUri");
+        return mediaUri?.Elements().FirstOrDefault(e => e.Name.LocalName == "Uri")?.Value ?? "";
+    }
+
     private static VideoEncoderConfig ReadEncoderConfig(XElement cfg)
     {
         var config = new VideoEncoderConfig
