@@ -29,7 +29,11 @@
 
 ## Архитектурные правила
 
-- **Слои:** `*.Core` (POCO, доменные сервисы, интерфейсы, без зависимости от WPF) → `*.Infrastructure` (ONVIF, persistence, IO) → `*.App` (WPF, ViewModel-ы, Views).
+- **Проекты:**
+  - `OnvifManager.Core` — `net8.0`, без WPF. POCO-модели (`Models/`) и ONVIF-сервисы (`Services/`). Запрещено тянуть `System.Windows.*` и любые UI-зависимости.
+  - `OnvifManager` — `net8.0-windows`, `UseWPF=true`. ViewModels + Views + DI-композиция. Ссылается на `OnvifManager.Core`.
+  - `OnvifManager.Cli` — `net8.0`, `Exe`, `AssemblyName=onvif`. Консольный фронтенд для скриптинга и troubleshooting. Ссылается только на `OnvifManager.Core`, без WPF-сборок.
+  - Любая новая ONVIF-логика (сервисы, парсеры, модели) — в `Core`, чтобы оба фронтенда могли её использовать. `*.Infrastructure` (отдельный слой persistence/IO) пока не выделен — добавится, когда понадобится.
 - **MVVM строго:** во View — никакого code-behind с бизнес-логикой; только обработчики, которые нельзя выразить через binding/Behaviors.
 - **Async везде:** в ViewModel-ах — `async Task`, `IAsyncRelayCommand`. На UI-потоке не блокируем `.Result` / `.Wait()`. Для библиотечного кода — `ConfigureAwait(false)`; в коде ViewModel-ов (WPF) — можно опускать.
 - **IDisposable / IAsyncDisposable:** все ONVIF-клиенты, RTSP-сессии, `CancellationTokenSource` — освобождать. ViewModel-ы, держащие подписки/таймеры — реализуют `IDisposable` и вычищаются при закрытии View.
@@ -43,9 +47,19 @@
 - Не ловить `Exception` без логирования и проброса дальше; не глотать ошибки молча.
 - Не хранить пароли камер в открытом виде — `DPAPI` (`ProtectedData`) или Windows Credential Manager.
 
+## CLI (`onvif.exe`)
+
+- Парсер аргументов — `System.CommandLine` (2.0-beta4). Структура verb-noun: `onvif discover`, `onvif get device-info`, `onvif set hostname`.
+- Общие опции подключения — `--host`, `--port`, `--user`, `--pass`, `--timeout`; пароль может быть в env `ONVIF_PASSWORD`.
+- Вывод — текст по умолчанию, `--json` для машинно-читаемого; ошибки идут в stderr.
+- Exit codes: `0` ok, `1` generic, `2` invalid args (System.CommandLine), `3` HTTP/connection, `4` auth (`401/403`).
+- Новые `get`/`set` команды добавляются в `OnvifManager.Cli/Commands/` поверх существующих сервисов из `OnvifManager.Core` (см. шаблон в `HostnameGetCommand.cs` / `HostnameSetCommand.cs`).
+- DI/IHost для CLI пока не подключён — каждая команда локально конструирует `OnvifClientProvider` через `CommandSupport.CreateProvider`. Полный `IHost` + Serilog добавятся, когда понадобятся `appsettings.json` и файловый лог.
+
 ## Команды
 
 - Сборка: `dotnet build -c Release`
 - Тесты: `dotnet test`
-- Запуск: `dotnet run --project src/OnvifCameraManager.App`
+- Запуск WPF: `dotnet run --project OnvifManager`
+- Запуск CLI: `dotnet run --project OnvifManager.Cli -- <command>` (например `... -- discover`, `... -- get device-info --host 192.168.1.10 --user admin --pass <pwd>`)
 - Форматирование: `dotnet format`
