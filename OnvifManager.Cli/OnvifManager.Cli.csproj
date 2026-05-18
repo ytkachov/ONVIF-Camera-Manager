@@ -8,10 +8,12 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>OnvifManager.Cli</RootNamespace>
     <AssemblyName>onvif</AssemblyName>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

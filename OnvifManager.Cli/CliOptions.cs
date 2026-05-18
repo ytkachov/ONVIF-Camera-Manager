@@ -4,25 +4,22 @@ namespace OnvifManager.Cli;
 
 internal static class CliOptions
 {
-    public static readonly Option<string> Host = new(
+    public static readonly Option<string?> Host = new(
         name: "--host",
-        description: "Camera IP address or hostname")
-    { IsRequired = true };
+        description: "Camera IP, hostname, or stored camera Name (looked up in cameras.json)");
 
     public static readonly Option<int> Port = new(
         name: "--port",
         getDefaultValue: () => 80,
-        description: "Camera ONVIF port (default 80)");
+        description: "Camera ONVIF port (default 80, or from store)");
 
-    public static readonly Option<string> User = new(
+    public static readonly Option<string?> User = new(
         name: "--user",
-        description: "ONVIF username")
-    { IsRequired = true };
+        description: "ONVIF username (optional if --host resolves a stored camera)");
 
-    public static readonly Option<string> Pass = new(
+    public static readonly Option<string?> Pass = new(
         name: "--pass",
-        getDefaultValue: () => Environment.GetEnvironmentVariable("ONVIF_PASSWORD") ?? string.Empty,
-        description: "ONVIF password (falls back to env ONVIF_PASSWORD)");
+        description: "ONVIF password (falls back to env ONVIF_PASSWORD, or store)");
 
     public static readonly Option<int> Timeout = new(
         name: "--timeout",

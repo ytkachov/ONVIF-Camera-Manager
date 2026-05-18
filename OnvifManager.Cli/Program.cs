@@ -33,10 +33,14 @@ set.AddCommand(ImagingSetCommand.Build());
 var device = new Command("device", "Device-level actions");
 device.AddCommand(RebootCommand.Build());
 
+var cameras = new Command("cameras", "Work with the local camera store (cameras.json)");
+cameras.AddCommand(CamerasListCommand.Build());
+
 root.AddCommand(DiscoverCommand.Build());
 root.AddCommand(get);
 root.AddCommand(set);
 root.AddCommand(device);
+root.AddCommand(cameras);
 root.AddCommand(SnapshotCaptureCommand.Build());
 
 return await root.InvokeAsync(args);
