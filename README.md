@@ -84,4 +84,4 @@ OnvifManager/
 
 ## License
 
-TBD.
+[MIT](LICENSE).
