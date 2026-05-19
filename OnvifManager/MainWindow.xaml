@@ -14,6 +14,11 @@
         WindowStyle="None"
         ResizeMode="CanResize">
 
+    <Window.InputBindings>
+        <KeyBinding Key="F11" Command="{Binding ToggleFullscreenCommand}"/>
+        <KeyBinding Key="Escape" Command="{Binding ExitFullscreenCommand}"/>
+    </Window.InputBindings>
+
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="32"
                             ResizeBorderThickness="6"
@@ -34,6 +39,15 @@
             <!-- Title strip (drag region + menu + window buttons) -->
             <Border Grid.Row="0" Background="{StaticResource BgPanelHeader}"
                     BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -117,6 +131,15 @@
             <!-- Toolbar -->
             <Border Grid.Row="1" Background="{StaticResource BgElevated}"
                     BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid Margin="14,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -242,17 +265,57 @@
                     <ColumnDefinition Width="360" MinWidth="280" MaxWidth="640"/>
                 </Grid.ColumnDefinitions>
 
-                <views:CameraListView Grid.Column="0" DataContext="{Binding Discovery}"/>
+                <views:CameraListView Grid.Column="0" DataContext="{Binding Discovery}">
+                    <views:CameraListView.Style>
+                        <Style TargetType="views:CameraListView">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsFullscreen, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </views:CameraListView.Style>
+                </views:CameraListView>
 
-                <views:VideoView Grid.Column="1"/>
+                <views:VideoView Grid.Column="1">
+                    <views:VideoView.Style>
+                        <Style TargetType="views:VideoView">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                    <Setter Property="Grid.Column" Value="0"/>
+                                    <Setter Property="Grid.ColumnSpan" Value="4"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </views:VideoView.Style>
+                </views:VideoView>
 
                 <GridSplitter Grid.Column="2" Width="4"
                               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                               Background="{StaticResource Divider}"
                               ResizeBehavior="PreviousAndNext"
-                              ShowsPreview="False"/>
+                              ShowsPreview="False">
+                    <GridSplitter.Style>
+                        <Style TargetType="GridSplitter">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </GridSplitter.Style>
+                </GridSplitter>
 
                 <Grid Grid.Column="3" Background="{StaticResource BgPanel}">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -338,6 +401,15 @@
 
             <!-- Status bar -->
             <Border Grid.Row="3" Background="{StaticResource Accent}" Padding="14,5">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

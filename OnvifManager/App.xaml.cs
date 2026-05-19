@@ -39,6 +39,8 @@ public partial class App : Application
 
         services.AddSingleton<DiscoveryService>();
         services.AddSingleton<SnapshotService>();
+        services.AddSingleton<VideoPlayerService>();
+        services.AddSingleton<AppSettingsService>();
 
         services.AddSingleton<IPasswordProtector, DpapiPasswordProtector>();
         services.AddSingleton<ICameraStore>(sp =>

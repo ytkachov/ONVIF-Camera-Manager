@@ -3,8 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="600">
+
+    <UserControl.Resources>
+        <Storyboard x:Key="RecPulse" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="1.0" To="0.25" Duration="0:0:0.6"/>
+        </Storyboard>
+    </UserControl.Resources>
 
     <Grid ClipToBounds="True">
         <Grid.Background>
@@ -13,123 +21,214 @@
                 <GradientStop Color="#FF0A0C10" Offset="1"/>
             </LinearGradientBrush>
         </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <!-- No-signal placeholder centered -->
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Visibility="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-            <TextBlock Text="NO SIGNAL" FontSize="32" FontWeight="Bold"
-                       Foreground="#22FFFFFF" HorizontalAlignment="Center"/>
-            <TextBlock Text="Выберите камеру слева" FontSize="12"
-                       Foreground="{StaticResource TextDim}"
-                       HorizontalAlignment="Center" Margin="0,8,0,0"/>
-        </StackPanel>
+        <!-- Top OSD bar: badges, camera info, profile + controls -->
+        <Border Grid.Row="0" Background="#A6000000" Padding="14,8"
+                Visibility="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- OSD overlays (shown only when camera selected) -->
-        <Grid Visibility="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}}">
-
-            <!-- Top-left: LIVE badge + camera name + IP -->
-            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"
-                        Orientation="Horizontal" Margin="14,12">
-                <Border Style="{StaticResource LiveBadge}">
-                    <TextBlock Text="LIVE" Foreground="White"
-                               FontSize="10" FontWeight="Bold"/>
-                </Border>
-                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Foreground="White" FontWeight="SemiBold" FontSize="13">
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="4"
-                                              ShadowDepth="1" Opacity="0.9"/>
-                        </TextBlock.Effect>
-                        <Run Text="{Binding Discovery.SelectedCamera.Name, FallbackValue=''}"/>
-                    </TextBlock>
-                    <TextBlock Foreground="#CCFFFFFF" FontSize="11"
-                               FontFamily="{StaticResource MonoFont}">
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="3"
-                                              ShadowDepth="1" Opacity="0.8"/>
-                        </TextBlock.Effect>
-                        <Run Text="{Binding Discovery.SelectedCamera.IpAddress, FallbackValue=''}"/>
-                    </TextBlock>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Border Style="{StaticResource LiveBadge}"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding VideoPlayer.IsPlaying, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="LIVE" Foreground="White"
+                                   FontSize="10" FontWeight="Bold"/>
+                    </Border>
+                    <Border Background="{StaticResource Danger}"
+                            Padding="6,2" Margin="6,0,0,0"
+                            CornerRadius="2"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding VideoPlayer.IsRecording, Converter={StaticResource BoolToVis}}">
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard Storyboard="{StaticResource RecPulse}"/>
+                            </EventTrigger>
+                        </Border.Triggers>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="White"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="REC" Foreground="White"
+                                       FontSize="10" FontWeight="Bold"
+                                       Margin="5,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Foreground="White" FontWeight="SemiBold" FontSize="13">
+                            <Run Text="{Binding Discovery.SelectedCamera.Name, FallbackValue=''}"/>
+                        </TextBlock>
+                        <TextBlock Foreground="#CCFFFFFF" FontSize="11"
+                                   FontFamily="{StaticResource MonoFont}">
+                            <Run Text="{Binding Discovery.SelectedCamera.IpAddress, FallbackValue=''}"/>
+                        </TextBlock>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
 
-            <!-- Top-right: video controls (overlay) -->
-            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Orientation="Horizontal" Margin="14,12">
-                <Button Style="{StaticResource VideoControlButton}" ToolTip="Пауза"
-                        Command="{Binding StopStreamCommand}">
-                    <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
-                          Data="{StaticResource IconPause}" Stretch="Uniform"/>
-                </Button>
-                <Button Style="{StaticResource VideoControlButton}" ToolTip="Снимок"
-                        Command="{Binding SnapshotCommand}">
-                    <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
-                          Data="{StaticResource IconSnapshot}" Stretch="Uniform"/>
-                </Button>
-                <Button Style="{StaticResource VideoControlButton}" ToolTip="Запись"
-                        Command="{Binding ToggleRecordCommand}">
-                    <Ellipse Width="9" Height="9" Fill="{StaticResource Danger}"/>
-                </Button>
-                <Button Style="{StaticResource VideoControlButton}" ToolTip="На весь экран">
-                    <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
-                          Data="{StaticResource IconFullscreen}" Stretch="Uniform"/>
-                </Button>
-            </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ComboBox MinWidth="140" Margin="0,0,8,0"
+                              VerticalAlignment="Center"
+                              ToolTip="Поток (профиль)"
+                              ItemsSource="{Binding VideoConfig.Profiles}"
+                              SelectedItem="{Binding VideoConfig.SelectedProfile, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                        <ComboBox.Style>
+                            <Style TargetType="ComboBox" BasedOn="{StaticResource OsdComboBox}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <Trigger Property="HasItems" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                    </ComboBox>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="Старт"
+                            Command="{Binding StartStreamCommand}"
+                            Visibility="{Binding VideoPlayer.IsPlaying, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
+                              Data="{StaticResource IconPlay}" Stretch="Uniform"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="Стоп"
+                            Command="{Binding StopStreamCommand}"
+                            Visibility="{Binding VideoPlayer.IsPlaying, Converter={StaticResource BoolToVis}}">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
+                              Data="{StaticResource IconStop}" Stretch="Uniform"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="Снимок"
+                            Command="{Binding SnapshotCommand}">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
+                              Data="{StaticResource IconSnapshot}" Stretch="Uniform"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}"
+                            ToolTip="Запись (toggle)"
+                            Command="{Binding ToggleRecordCommand}">
+                        <Ellipse Width="9" Height="9" Fill="{StaticResource Danger}"/>
+                    </Button>
+                    <Button Style="{StaticResource VideoControlButton}" ToolTip="На весь экран"
+                            Command="{Binding ToggleFullscreenCommand}">
+                        <Path Width="12" Height="12" Fill="{StaticResource TextPrimary}"
+                              Data="{StaticResource IconFullscreen}" Stretch="Uniform"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-            <!-- Bottom telemetry strip overlaid on video -->
-            <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                    Background="#80000000" Padding="14,6">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.Resources>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
-                            <Setter Property="FontSize" Value="11"/>
-                            <Setter Property="Foreground" Value="#CCFFFFFF"/>
-                            <Setter Property="Margin" Value="0,0,18,0"/>
-                            <Setter Property="VerticalAlignment" Value="Center"/>
+        <!-- Video area: vlc:VideoView centered with aspect fit; placeholder when not playing -->
+        <Grid Grid.Row="1" x:Name="VideoArea"
+              SizeChanged="VideoArea_SizeChanged"
+              MouseLeftButtonDown="VideoArea_MouseLeftButtonDown">
+            <vlc:VideoView x:Name="VideoSurface"
+                           MediaPlayer="{Binding VideoPlayer.Player, Mode=OneWay}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Background="Black">
+                <!-- Opaque cover hides the native HWND surface when not playing -->
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding VideoPlayer.IsPlaying}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
-                    </Grid.Resources>
-
-                    <TextBlock Grid.Column="0">
-                        <Run Text="FPS" Foreground="#80FFFFFF"/>
-                        <Run Text=" —"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="1">
-                        <Run Text="Битрейт" Foreground="#80FFFFFF"/>
-                        <Run Text=" —"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="2">
-                        <Run Text="Разрешение" Foreground="#80FFFFFF"/>
-                        <Run Text=" "/>
-                        <Run Text="{Binding VideoConfig.Width, FallbackValue='—', Mode=OneWay}"/>
-                        <Run Text="×"/>
-                        <Run Text="{Binding VideoConfig.Height, FallbackValue='—', Mode=OneWay}"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="3">
-                        <Run Text="Кодек" Foreground="#80FFFFFF"/>
-                        <Run Text=" "/>
-                        <Run Text="{Binding VideoConfig.Encoding, FallbackValue='—', Mode=OneWay}"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="4">
-                        <Run Text="Задержка" Foreground="#80FFFFFF"/>
-                        <Run Text=" —"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="5" HorizontalAlignment="Right" Margin="0"
-                               TextTrimming="CharacterEllipsis">
-                        <Run Text="RTSP" Foreground="#80FFFFFF"/>
-                        <Run Text=" "/>
-                        <Run Text="{Binding VideoConfig.StreamUri, FallbackValue='—'}"/>
-                    </TextBlock>
-                </Grid>
-            </Border>
+                    </Border.Style>
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#FF1A2030" Offset="0"/>
+                            <GradientStop Color="#FF0A0C10" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="NO SIGNAL" FontSize="32" FontWeight="Bold"
+                                   Foreground="#22FFFFFF" HorizontalAlignment="Center"/>
+                        <TextBlock FontSize="12" Foreground="{StaticResource TextDim}"
+                                   HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Выберите камеру слева"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}}" Value="Visible">
+                                            <Setter Property="Text" Value="{Binding VideoPlayer.StatusText, FallbackValue='Нажмите «Старт» для запуска потока'}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </vlc:VideoView>
         </Grid>
+
+        <!-- Bottom telemetry bar -->
+        <Border Grid.Row="2" Background="#A6000000" Padding="14,6"
+                Visibility="{Binding Discovery.SelectedCamera, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.Resources>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+                        <Setter Property="FontSize" Value="11"/>
+                        <Setter Property="Foreground" Value="#CCFFFFFF"/>
+                        <Setter Property="Margin" Value="0,0,18,0"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                    </Style>
+                </Grid.Resources>
+
+                <TextBlock Grid.Column="0">
+                    <Run Text="FPS" Foreground="#80FFFFFF"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoPlayer.Fps, StringFormat='{}{0:0.0}', FallbackValue='—', Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="1">
+                    <Run Text="Битрейт" Foreground="#80FFFFFF"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoPlayer.BitrateKbps, StringFormat='{}{0} kbps', FallbackValue='—', Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="2">
+                    <Run Text="Разрешение" Foreground="#80FFFFFF"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoPlayer.VideoWidth, FallbackValue='—', Mode=OneWay}"/>
+                    <Run Text="×"/>
+                    <Run Text="{Binding VideoPlayer.VideoHeight, FallbackValue='—', Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="3">
+                    <Run Text="Кодек" Foreground="#80FFFFFF"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoConfig.Encoding, FallbackValue='—', Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="4">
+                    <Run Text="Статус" Foreground="#80FFFFFF"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoPlayer.StatusText, FallbackValue='—', Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="5" HorizontalAlignment="Right" Margin="0"
+                           TextTrimming="CharacterEllipsis">
+                    <Run Text="RTSP" Foreground="#80FFFFFF"/>
+                    <Run Text=" "/>
+                    <Run Text="{Binding VideoConfig.StreamUri, FallbackValue='—'}"/>
+                </TextBlock>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

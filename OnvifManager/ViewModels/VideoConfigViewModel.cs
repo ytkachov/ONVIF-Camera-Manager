@@ -13,6 +13,9 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _loadCts;
     private CameraDevice? _camera;
     private bool _disposed;
+    private bool _suppressProfileChange;
+
+    public event Action? StreamProfileChanged;
 
     [ObservableProperty] private ObservableCollection<CameraProfile> _profiles = new();
     [ObservableProperty] private CameraProfile? _selectedProfile;
@@ -73,7 +76,9 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
 
             if (profiles.Count > 0)
             {
-                SelectedProfile = profiles[0];
+                _suppressProfileChange = true;
+                try { SelectedProfile = profiles[0]; }
+                finally { _suppressProfileChange = false; }
                 try
                 {
                     StreamUri = await mediaService.GetStreamUriAsync(profiles[0].Token, ct: ct);
@@ -117,6 +122,30 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
     partial void OnSelectedEncoderChanged(VideoEncoderConfig? value)
     {
         if (value != null) LoadEncoderIntoFields(value);
+    }
+
+    partial void OnSelectedProfileChanged(CameraProfile? value)
+    {
+        if (_suppressProfileChange || value == null || _camera == null) return;
+        _ = RefreshStreamUriAsync(value);
+    }
+
+    private async Task RefreshStreamUriAsync(CameraProfile profile)
+    {
+        try
+        {
+            var client = _provider.Get(_camera!);
+            var ms = new MediaService(client);
+            StreamUri = await ms.GetStreamUriAsync(profile.Token);
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"StreamUri error: {ex.Message}";
+        }
+        finally
+        {
+            StreamProfileChanged?.Invoke();
+        }
     }
 
     [RelayCommand]

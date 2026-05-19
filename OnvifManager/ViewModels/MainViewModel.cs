@@ -22,6 +22,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _connectionStatus = "Не подключено";
     [ObservableProperty] private string _profileText = "ONVIF Profile S";
     [ObservableProperty] private string _readyText = "Готово";
+    [ObservableProperty] private bool _isFullscreen;
 
     public DiscoveryViewModel Discovery { get; }
     public DeviceInfoViewModel DeviceInfo { get; }
@@ -29,6 +30,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public NetworkConfigViewModel NetworkConfig { get; }
     public PtzViewModel Ptz { get; }
     public EventsViewModel Events { get; }
+    public VideoPlayerService VideoPlayer { get; }
+    public AppSettingsService Settings { get; }
 
     private readonly SnapshotService _snapshot;
     private readonly OnvifClientProvider _provider;
@@ -42,7 +45,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PtzViewModel ptz,
         EventsViewModel events,
         SnapshotService snapshot,
-        OnvifClientProvider provider)
+        OnvifClientProvider provider,
+        VideoPlayerService videoPlayer,
+        AppSettingsService settings)
     {
         Discovery = discovery;
         DeviceInfo = deviceInfo;
@@ -50,6 +55,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         NetworkConfig = networkConfig;
         Ptz = ptz;
         Events = events;
+        VideoPlayer = videoPlayer;
+        Settings = settings;
         _snapshot = snapshot;
         _provider = provider;
 
@@ -57,12 +64,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Discovery.DeviceInfoRequested += () => SelectedTab = ParamTab.Info;
         Discovery.VideoConfigRequested += () => SelectedTab = ParamTab.Video;
         Discovery.NetworkConfigRequested += () => SelectedTab = ParamTab.Network;
+        VideoConfig.StreamProfileChanged += OnStreamProfileChanged;
     }
 
     private void OnCameraSelected()
     {
         var c = Discovery.SelectedCamera;
         ConnectionStatus = c?.IsConnected == true ? "● Подключено" : "● Не подключено";
+        VideoPlayer.Stop();
+        if (Settings.AutoPlayOnSelect && c?.IsConnected == true)
+            _ = StartStreamAsync();
+    }
+
+    private void OnStreamProfileChanged()
+    {
+        if (!VideoPlayer.IsPlaying) return;
+        _ = StartStreamAsync();
     }
 
     public string ActiveCameraLabel
@@ -83,10 +100,61 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void AddManual() => Discovery.OpenAddManualCommand.Execute(null);
 
     [RelayCommand]
-    private void StartStream() => ReadyText = "Старт потока (заглушка)";
+    private async Task StartStreamAsync()
+    {
+        var camera = Discovery.SelectedCamera;
+        if (camera == null)
+        {
+            ReadyText = "Сначала выберите камеру";
+            return;
+        }
+
+        string uri;
+        try
+        {
+            var media = new MediaService(_provider.Get(camera));
+            var profileToken = VideoConfig.SelectedProfile?.Token
+                               ?? camera.Profiles.FirstOrDefault()?.Token;
+            if (string.IsNullOrEmpty(profileToken))
+            {
+                var profiles = await media.GetProfilesAsync();
+                profileToken = profiles.FirstOrDefault()?.Token;
+            }
+            if (string.IsNullOrEmpty(profileToken))
+                throw new InvalidOperationException("У камеры нет media profile");
+            uri = await media.GetStreamUriAsync(profileToken);
+        }
+        catch (Exception ex)
+        {
+            ReadyText = $"Ошибка получения RTSP: {ex.Message}";
+            return;
+        }
+
+        var recordPath = VideoPlayer.IsRecording
+            ? VideoPlayer.CurrentRecordingPath
+            : null;
+        VideoPlayer.Play(uri, camera.Username, camera.Password, recordPath);
+        ReadyText = $"Запуск потока: {uri}";
+    }
 
     [RelayCommand]
-    private void StopStream() => ReadyText = "Стоп потока (заглушка)";
+    private void StopStream()
+    {
+        VideoPlayer.Stop();
+        ReadyText = "Поток остановлен";
+    }
+
+    [RelayCommand]
+    private void ToggleFullscreen()
+    {
+        IsFullscreen = !IsFullscreen;
+    }
+
+    [RelayCommand]
+    private void ExitFullscreen()
+    {
+        if (IsFullscreen) IsFullscreen = false;
+    }
 
     [RelayCommand]
     private async Task SnapshotAsync()
@@ -129,7 +197,53 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void ToggleRecord() => ReadyText = "Запись (заглушка)";
+    private void ToggleRecord()
+    {
+        var camera = Discovery.SelectedCamera;
+        if (camera == null)
+        {
+            ReadyText = "Сначала выберите камеру";
+            return;
+        }
+
+        if (VideoPlayer.IsRecording)
+        {
+            var path = VideoPlayer.CurrentRecordingPath;
+            VideoPlayer.StopRecording();
+            ReadyText = $"Запись остановлена: {Path.GetFileName(path)}";
+            Discovery.StatusText = $"Запись сохранена: {path}";
+            return;
+        }
+
+        if (!VideoPlayer.IsPlaying)
+        {
+            ReadyText = "Сначала запустите поток";
+            return;
+        }
+
+        try
+        {
+            var dir = string.IsNullOrWhiteSpace(Settings.RecordingsPath)
+                ? AppSettings.DefaultRecordingsPath()
+                : Settings.RecordingsPath;
+            Directory.CreateDirectory(dir);
+            var safeName = string.IsNullOrEmpty(camera.Name)
+                ? camera.IpAddress
+                : camera.Name;
+            foreach (var ch in Path.GetInvalidFileNameChars())
+                safeName = safeName.Replace(ch, '_');
+            var fileName = $"{safeName}-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.ts";
+            var fullPath = Path.Combine(dir, fileName);
+            VideoPlayer.StartRecording(fullPath);
+            ReadyText = $"Запись: {fileName}";
+            Discovery.StatusText = $"Идёт запись в {fullPath}";
+        }
+        catch (Exception ex)
+        {
+            ReadyText = $"Ошибка записи: {ex.Message}";
+            Discovery.StatusText = $"Ошибка записи: {ex.Message}";
+        }
+    }
 
     [RelayCommand]
     private async Task RebootCameraAsync()
@@ -168,7 +282,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void OpenSettings() => ReadyText = "Настройки (заглушка)";
+    private void OpenSettings()
+    {
+        var dlg = new Views.SettingsDialog(Settings)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+        if (dlg.ShowDialog() == true)
+            ReadyText = "Настройки сохранены";
+    }
 
     [RelayCommand]
     private async Task ClearCameraListAsync()
@@ -249,5 +371,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         Discovery.CameraSelected -= OnCameraSelected;
+        VideoConfig.StreamProfileChanged -= OnStreamProfileChanged;
     }
 }

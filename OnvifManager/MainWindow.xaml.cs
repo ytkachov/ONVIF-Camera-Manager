@@ -11,14 +11,45 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private LogWindow? _logWindow;
 
+    private WindowState _preFullscreenState = WindowState.Normal;
+    private Rect _preFullscreenBounds;
+
     public MainWindow(MainViewModel mainViewModel)
     {
         InitializeComponent();
         _vm = mainViewModel;
         DataContext = mainViewModel;
         mainViewModel.Discovery.AddManualRequested += OnAddManualRequested;
-        Closed += (_, _) => mainViewModel.Discovery.AddManualRequested -= OnAddManualRequested;
+        mainViewModel.PropertyChanged += OnVmPropertyChanged;
+        Closed += (_, _) =>
+        {
+            mainViewModel.Discovery.AddManualRequested -= OnAddManualRequested;
+            mainViewModel.PropertyChanged -= OnVmPropertyChanged;
+        };
         StateChanged += (_, _) => UpdateMaxRestoreGlyph();
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(MainViewModel.IsFullscreen)) return;
+        if (_vm.IsFullscreen)
+        {
+            _preFullscreenState = WindowState;
+            _preFullscreenBounds = new Rect(Left, Top, Width, Height);
+            if (WindowState != WindowState.Normal) WindowState = WindowState.Normal;
+            Left = 0;
+            Top = 0;
+            Width = SystemParameters.PrimaryScreenWidth;
+            Height = SystemParameters.PrimaryScreenHeight;
+        }
+        else
+        {
+            Left = _preFullscreenBounds.Left;
+            Top = _preFullscreenBounds.Top;
+            Width = _preFullscreenBounds.Width;
+            Height = _preFullscreenBounds.Height;
+            WindowState = _preFullscreenState;
+        }
     }
 
     private void OnAddManualRequested()
