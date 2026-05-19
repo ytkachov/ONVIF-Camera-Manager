@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\seagull.ico" />
-    <Resource Include="Assets\splash.png" />
+    <Resource Include="Assets\splash-800x500.png" />
     <Resource Include="Assets\Icons\seagull-16.png" />
     <Resource Include="Assets\Icons\seagull-20.png" />
     <Resource Include="Assets\Icons\seagull-24.png" />

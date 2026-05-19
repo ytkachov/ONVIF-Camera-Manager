@@ -13,7 +13,7 @@
         Focusable="False">
 
     <Canvas>
-        <Image Source="/Assets/splash.png" Width="800" Height="500"
+        <Image Source="/Assets/splash-800x500.png" Width="800" Height="500"
                Stretch="Fill" Canvas.Left="0" Canvas.Top="0"/>
 
         <TextBlock Canvas.Left="66" Canvas.Top="458"
@@ -22,5 +22,20 @@
                    FontSize="18"
                    FontWeight="Normal"
                    Foreground="#B8FFFFFF"/>
+
+        <Rectangle Canvas.Left="64" Canvas.Top="450"
+                   Width="280" Height="2"
+                   Fill="#1AFFFFFF"/>
+        <Rectangle x:Name="ProgressFill"
+                   Canvas.Left="64" Canvas.Top="450"
+                   Width="0" Height="2"
+                   Fill="#FFB36B"/>
+
+        <TextBlock x:Name="VersionText"
+                   Canvas.Left="66" Canvas.Top="480"
+                   FontFamily="Cascadia Code"
+                   FontSize="13"
+                   FontWeight="Medium"
+                   Foreground="#73FFFFFF"/>
     </Canvas>
 </Window>

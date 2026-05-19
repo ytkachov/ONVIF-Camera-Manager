@@ -12,12 +12,15 @@ public partial class App : Application
 {
     private ServiceProvider _serviceProvider = null!;
 
+    private static readonly TimeSpan SplashMinDuration = TimeSpan.FromMilliseconds(3000);
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
         var splash = new SplashWindow();
         splash.Show();
+        splash.StartProgress(SplashMinDuration);
         var splashShownAt = DateTime.UtcNow;
 
         var services = new ServiceCollection();
@@ -55,7 +58,7 @@ public partial class App : Application
     private static void CloseSplash(SplashWindow splash, DateTime shownAt)
     {
         var elapsed = DateTime.UtcNow - shownAt;
-        var remaining = TimeSpan.FromMilliseconds(1200) - elapsed;
+        var remaining = SplashMinDuration - elapsed;
         if (remaining > TimeSpan.Zero)
         {
             var timer = new DispatcherTimer { Interval = remaining };
