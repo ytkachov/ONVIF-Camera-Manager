@@ -52,7 +52,7 @@ public partial class MainWindow : Window
     {
         if (_logWindow == null || !_logWindow.IsLoaded)
         {
-            _logWindow = new LogWindow { Owner = null };
+            _logWindow = new LogWindow { Owner = this };
             _logWindow.Closed += (_, _) => _logWindow = null;
         }
         _logWindow.Show();

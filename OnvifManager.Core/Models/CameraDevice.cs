@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace OnvifManager.Models;
 
@@ -9,29 +10,61 @@ public enum CameraStatus
     Offline
 }
 
-public class CameraDevice
+public partial class CameraDevice : ObservableObject
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
-    public string Endpoint { get; set; } = string.Empty;
-    public string Manufacturer { get; set; } = string.Empty;
-    public string Model { get; set; } = string.Empty;
-    public string FirmwareVersion { get; set; } = string.Empty;
-    public string SerialNumber { get; set; } = string.Empty;
-    public string HardwareId { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string IpAddress { get; set; } = string.Empty;
-    public int Port { get; set; } = 80;
-    public string Username { get; set; } = "admin";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Protocol))]
+    [NotifyPropertyChangedFor(nameof(MetaLine))]
+    private string _endpoint = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLabel))]
+    private string _manufacturer = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLabel))]
+    private string _model = string.Empty;
+
+    [ObservableProperty] private string _firmwareVersion = string.Empty;
+    [ObservableProperty] private string _serialNumber = string.Empty;
+    [ObservableProperty] private string _hardwareId = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLabel))]
+    private string _name = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLabel))]
+    [NotifyPropertyChangedFor(nameof(MetaLine))]
+    private string _ipAddress = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLabel))]
+    private int _port = 80;
+
+    [ObservableProperty] private string _username = "admin";
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public string Password { get; set; } = string.Empty;
+    [ObservableProperty] private string _password = string.Empty;
 
-    public List<CameraProfile> Profiles { get; set; } = new();
-    public List<OnvifServiceUri> Services { get; set; } = new();
-    public bool IsDiscovered { get; set; }
-    public bool IsManual { get; set; }
-    public bool IsConnected { get; set; }
-    public string StatusMessage { get; set; } = string.Empty;
+    [ObservableProperty] private List<CameraProfile> _profiles = new();
+    [ObservableProperty] private List<OnvifServiceUri> _services = new();
+    [ObservableProperty] private bool _isDiscovered;
+    [ObservableProperty] private bool _isManual;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Status))]
+    [NotifyPropertyChangedFor(nameof(Protocol))]
+    [NotifyPropertyChangedFor(nameof(MetaLine))]
+    private bool _isConnected;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Status))]
+    [NotifyPropertyChangedFor(nameof(Protocol))]
+    [NotifyPropertyChangedFor(nameof(MetaLine))]
+    private string _statusMessage = string.Empty;
 
     public string DisplayLabel => string.IsNullOrEmpty(Name)
         ? $"{IpAddress}:{Port}" : $"{Name} ({IpAddress})";

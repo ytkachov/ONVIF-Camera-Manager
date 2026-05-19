@@ -5,11 +5,23 @@ namespace OnvifManager.Vendors;
 
 public sealed class HikvisionVendorAdapter : VendorAdapterBase
 {
+    private static readonly string[] SupportedManufacturers =
+    {
+        "HIKVISION",
+        // HiWatch is a Hikvision sub-brand sharing the same firmware and ISAPI surface.
+        "HiWatch"
+    };
+
     public override string Vendor => "HIKVISION";
 
-    public override bool Supports(CameraDevice camera) =>
-        !string.IsNullOrEmpty(camera?.Manufacturer)
-        && camera!.Manufacturer.Contains("HIKVISION", StringComparison.OrdinalIgnoreCase);
+    public override bool Supports(CameraDevice camera)
+    {
+        var m = camera?.Manufacturer;
+        if (string.IsNullOrEmpty(m)) return false;
+        foreach (var s in SupportedManufacturers)
+            if (m!.Contains(s, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
 
     public override async Task<string?> GetFriendlyNameAsync(OnvifClient client, CancellationToken ct = default)
     {

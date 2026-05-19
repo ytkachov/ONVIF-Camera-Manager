@@ -171,6 +171,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OpenSettings() => ReadyText = "Настройки (заглушка)";
 
     [RelayCommand]
+    private async Task ClearCameraListAsync()
+    {
+        if (Discovery.Cameras.Count == 0)
+        {
+            ReadyText = "Список камер уже пуст";
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Очистить список камер ({Discovery.Cameras.Count})?\nСохранённая конфигурация будет удалена.",
+            "Очистка списка",
+            MessageBoxButton.OKCancel, MessageBoxImage.Warning, MessageBoxResult.Cancel);
+        if (confirm != MessageBoxResult.OK) return;
+
+        await Discovery.ClearAllCommand.ExecuteAsync(null);
+        ReadyText = "Список камер очищен";
+    }
+
+    [RelayCommand]
     private void SelectTab(string tab)
     {
         if (Enum.TryParse<ParamTab>(tab, true, out var t))

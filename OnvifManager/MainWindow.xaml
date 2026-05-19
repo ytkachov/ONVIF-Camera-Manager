@@ -59,6 +59,9 @@
                           shell:WindowChrome.IsHitTestVisibleInChrome="True"
                           VerticalAlignment="Center">
                         <MenuItem Header="_Файл">
+                            <MenuItem Header="Очистить список камер…"
+                                      Command="{Binding ClearCameraListCommand}"/>
+                            <Separator/>
                             <MenuItem Header="Выход" Click="Exit_Click"/>
                         </MenuItem>
                         <MenuItem Header="_Вид"/>

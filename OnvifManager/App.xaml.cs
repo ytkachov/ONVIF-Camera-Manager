@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
 
         var splash = new SplashWindow();
         splash.Show();
@@ -38,6 +40,14 @@ public partial class App : Application
         services.AddSingleton<DiscoveryService>();
         services.AddSingleton<SnapshotService>();
 
+        services.AddSingleton<IPasswordProtector, DpapiPasswordProtector>();
+        services.AddSingleton<ICameraStore>(sp =>
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var path = Path.Combine(appData, "SeaGull", "cameras.json");
+            return new JsonCameraStore(path, sp.GetRequiredService<IPasswordProtector>());
+        });
+
         services.AddSingleton<DiscoveryViewModel>();
         services.AddSingleton<DeviceInfoViewModel>();
         services.AddSingleton<VideoConfigViewModel>();
@@ -51,7 +61,12 @@ public partial class App : Application
         _serviceProvider = services.BuildServiceProvider();
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-        mainWindow.Loaded += (_, _) => CloseSplash(splash, splashShownAt);
+        MainWindow = mainWindow;
+        mainWindow.Loaded += (_, _) =>
+        {
+            CloseSplash(splash, splashShownAt);
+            _serviceProvider.GetRequiredService<DiscoveryViewModel>().StartBackgroundProbeOfSaved();
+        };
         mainWindow.Show();
     }
 
@@ -77,7 +92,21 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _serviceProvider?.Dispose();
+        if (_serviceProvider != null)
+        {
+            try
+            {
+                _serviceProvider.GetRequiredService<DiscoveryViewModel>()
+                    .FlushPendingSaveAsync()
+                    .GetAwaiter().GetResult();
+            }
+            catch { }
+            _serviceProvider.Dispose();
+        }
         base.OnExit(e);
+
+        // Pending background HTTP / ISAPI tasks may keep the process alive after the
+        // last WPF window closes; force a hard exit so we never leak a zombie.
+        Environment.Exit(e.ApplicationExitCode);
     }
 }

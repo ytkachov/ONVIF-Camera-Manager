@@ -75,8 +75,12 @@ OnvifManager/
 - IPv4 only in the network configuration.
 - PTZ, events, analytics and audio are not implemented.
 - No in-app video preview: the application surfaces the RTSP URI; play it back in an external player (VLC, etc.).
-- Camera credentials live only in process memory; nothing is persisted.
+- Camera credentials are persisted to `%APPDATA%/SeaGull/cameras.json`, encrypted with DPAPI under the current Windows user. They cannot be decrypted by a different user or on a different machine.
 - The camera's TLS certificate is not validated (`ServerCertificateCustomValidationCallback` accepts any) — be aware of this outside a trusted network.
+
+## Known issues
+
+- **Hikvision NVR friendly name is not auto-populated.** On Hikvision NVR firmware (observed on `DS-I200(D)` running `V5.5.120`) the ISAPI `GET /ISAPI/System/deviceInfo` call used to read the device name returns `401 Unauthorized` even after a Digest re-authentication round-trip. The same code works on Hikvision IP cameras and the *write* path (renaming the camera from the Device Info tab) works on the same NVRs. As a workaround, the camera shows the auto-name `"{Manufacturer} {Model}"` until you rename it manually — the new name persists across restarts.
 
 ## License
 
