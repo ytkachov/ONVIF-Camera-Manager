@@ -4,10 +4,17 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace OnvifManager.Services;
 
+public enum AppViewMode
+{
+    Onvif,
+    Full
+}
+
 public sealed class AppSettings
 {
     public string RecordingsPath { get; set; } = DefaultRecordingsPath();
     public bool AutoPlayOnSelect { get; set; }
+    public AppViewMode ViewMode { get; set; } = AppViewMode.Onvif;
 
     public static string DefaultRecordingsPath() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
@@ -16,11 +23,16 @@ public sealed class AppSettings
 
 public sealed partial class AppSettingsService : ObservableObject
 {
-    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        WriteIndented = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
     private readonly string _path;
 
     [ObservableProperty] private string _recordingsPath = AppSettings.DefaultRecordingsPath();
     [ObservableProperty] private bool _autoPlayOnSelect;
+    [ObservableProperty] private AppViewMode _viewMode = AppViewMode.Onvif;
 
     public AppSettingsService()
     {
@@ -41,6 +53,7 @@ public sealed partial class AppSettingsService : ObservableObject
                 ? AppSettings.DefaultRecordingsPath()
                 : data.RecordingsPath;
             AutoPlayOnSelect = data.AutoPlayOnSelect;
+            ViewMode = data.ViewMode;
         }
         catch { }
     }
@@ -54,7 +67,8 @@ public sealed partial class AppSettingsService : ObservableObject
             var data = new AppSettings
             {
                 RecordingsPath = RecordingsPath,
-                AutoPlayOnSelect = AutoPlayOnSelect
+                AutoPlayOnSelect = AutoPlayOnSelect,
+                ViewMode = ViewMode
             };
             File.WriteAllText(_path, JsonSerializer.Serialize(data, Options));
         }

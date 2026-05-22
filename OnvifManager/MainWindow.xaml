@@ -317,11 +317,54 @@
                         </Style>
                     </Grid.Style>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TabControl Grid.Row="0" SelectedIndex="{Binding SelectedTabIndex}">
+                    <!-- Parameter set switch: ONVIF spec only vs all vendor params -->
+                    <Border Grid.Row="0" Background="{StaticResource BgPanelHeader}"
+                            BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1"
+                            Padding="14,8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="Параметры:" VerticalAlignment="Center" FontSize="11"
+                                       Foreground="{StaticResource TextMuted}" Margin="0,0,12,0"/>
+                            <TextBlock Text="ONVIF" VerticalAlignment="Center" FontSize="11">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsFullMode}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+                                                <Setter Property="FontWeight" Value="Normal"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" Margin="8,0,8,0"
+                                      VerticalAlignment="Center"
+                                      IsChecked="{Binding IsFullMode, Mode=TwoWay}"
+                                      ToolTip="ONVIF — только параметры спецификации. Полный — все параметры известной (vendor) камеры."/>
+                            <TextBlock Text="Полный" VerticalAlignment="Center" FontSize="11">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsFullMode}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
                         <TabItem>
                             <TabItem.Header>
                                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
@@ -342,7 +385,13 @@
                                     <TextBlock Text="Видео" Margin="0,3,0,0"/>
                                 </StackPanel>
                             </TabItem.Header>
-                            <views:VideoConfigView DataContext="{Binding VideoConfig}"/>
+                            <DockPanel>
+                                <views:VendorSections DockPanel.Dock="Bottom"
+                                    TabKey="Video"
+                                    DataContext="{Binding VendorHost}"
+                                    Visibility="{Binding DataContext.IsFullMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                                <views:VideoConfigView DataContext="{Binding VideoConfig}"/>
+                            </DockPanel>
                         </TabItem>
                         <TabItem>
                             <TabItem.Header>
@@ -379,7 +428,7 @@
                         </TabItem>
                     </TabControl>
 
-                    <Border Grid.Row="1" Background="{StaticResource BgPanelHeader}"
+                    <Border Grid.Row="2" Background="{StaticResource BgPanelHeader}"
                             BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0"
                             Padding="14,12">
                         <Grid>

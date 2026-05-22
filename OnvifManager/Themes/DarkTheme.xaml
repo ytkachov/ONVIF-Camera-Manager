@@ -178,6 +178,15 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <!-- Show the field's own value as a tooltip so truncated text stays readable -->
+        <Setter Property="ToolTipService.ShowDuration" Value="20000"/>
+        <Setter Property="ToolTip"
+                Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+        <Style.Triggers>
+            <Trigger Property="Text" Value="">
+                <Setter Property="ToolTip" Value="{x:Null}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- ===== PasswordBox ===== -->

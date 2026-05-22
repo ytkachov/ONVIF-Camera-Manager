@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public EventsViewModel Events { get; }
     public VideoPlayerService VideoPlayer { get; }
     public AppSettingsService Settings { get; }
+    public VendorParametersHostViewModel VendorHost { get; }
 
     private readonly SnapshotService _snapshot;
     private readonly OnvifClientProvider _provider;
@@ -47,7 +48,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SnapshotService snapshot,
         OnvifClientProvider provider,
         VideoPlayerService videoPlayer,
-        AppSettingsService settings)
+        AppSettingsService settings,
+        VendorParametersHostViewModel vendorHost)
     {
         Discovery = discovery;
         DeviceInfo = deviceInfo;
@@ -57,6 +59,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Events = events;
         VideoPlayer = videoPlayer;
         Settings = settings;
+        VendorHost = vendorHost;
         _snapshot = snapshot;
         _provider = provider;
 
@@ -67,11 +70,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
         VideoConfig.StreamProfileChanged += OnStreamProfileChanged;
     }
 
+    public bool IsFullMode
+    {
+        get => Settings.ViewMode == AppViewMode.Full;
+        set
+        {
+            var mode = value ? AppViewMode.Full : AppViewMode.Onvif;
+            if (Settings.ViewMode == mode) return;
+            Settings.ViewMode = mode;
+            Settings.Save();
+            OnPropertyChanged();
+            _ = RefreshVendorParamsAsync();
+        }
+    }
+
+    public bool VendorAvailable => VendorHost.HasProfile(Discovery.SelectedCamera);
+
+    private async Task RefreshVendorParamsAsync()
+    {
+        if (IsFullMode)
+            await VendorHost.LoadAsync(Discovery.SelectedCamera);
+        else
+            VendorHost.Clear();
+    }
+
     private void OnCameraSelected()
     {
         var c = Discovery.SelectedCamera;
         ConnectionStatus = c?.IsConnected == true ? "● Подключено" : "● Не подключено";
         VideoPlayer.Stop();
+        OnPropertyChanged(nameof(VendorAvailable));
+        _ = RefreshVendorParamsAsync();
         if (Settings.AutoPlayOnSelect && c?.IsConnected == true)
             _ = StartStreamAsync();
     }
@@ -338,6 +367,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
             case ParamTab.Info:
                 await DeviceInfo.SaveCommand.ExecuteAsync(null);
                 break;
+        }
+
+        if (IsFullMode)
+        {
+            try
+            {
+                var written = await VendorHost.SaveAsync(Discovery.SelectedCamera);
+                if (written > 0)
+                    ReadyText = $"Vendor-параметры сохранены: {written}";
+            }
+            catch (Exception ex)
+            {
+                ReadyText = $"Ошибка vendor-параметров: {ex.Message}";
+            }
         }
     }
 

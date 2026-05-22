@@ -1,0 +1,73 @@
+{
+  "vendor": "HIKVISION",
+  "match": {
+    "manufacturerContains": [ "HIKVISION", "HiWatch" ]
+  },
+  "parameters": [
+    {
+      "id": "hik.image.hlc.enabled",
+      "tab": "Video",
+      "section": "Изображение — Hikvision",
+      "label": "HLC (компенсация засветки)",
+      "description": "Highlight Compensation — гасит локальные пересветы (фары, прожекторы), затемняя яркие зоны кадра.",
+      "type": "bool",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/HLC" },
+      "valuePath": "enabled",
+      "trueValue": "true",
+      "falseValue": "false"
+    },
+    {
+      "id": "hik.image.hlc.level",
+      "tab": "Video",
+      "section": "Изображение — Hikvision",
+      "label": "Уровень HLC",
+      "description": "Сила компенсации засветки. Действует только при включённом HLC.",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/HLC" },
+      "valuePath": "HLCLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    {
+      "id": "hik.image.wdr.mode",
+      "tab": "Video",
+      "section": "Изображение — Hikvision",
+      "label": "WDR (широкий динамический диапазон)",
+      "description": "Wide Dynamic Range — вытягивает детали одновременно в тенях и на свету (контровой свет, окна).",
+      "type": "enum",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/WDR" },
+      "valuePath": "mode",
+      "options": [
+        { "value": "open", "label": "Включён" },
+        { "value": "close", "label": "Выключен" }
+      ]
+    },
+    {
+      "id": "hik.image.wdr.level",
+      "tab": "Video",
+      "section": "Изображение — Hikvision",
+      "label": "Уровень WDR",
+      "description": "Сила WDR. Действует только при WDR = «Включён».",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/WDR" },
+      "valuePath": "WDRLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    {
+      "id": "hik.image.noisereduce.level",
+      "tab": "Video",
+      "section": "Изображение — Hikvision",
+      "label": "Шумоподавление (уровень)",
+      "description": "Digital Noise Reduction (общий режим). Выше — меньше шума, но возможен «смаз» движения.",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/noiseReduce" },
+      "valuePath": "GeneralMode/generalLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    }
+  ]
+}

@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using OnvifManager.Services;
 using OnvifManager.Vendors;
+using OnvifManager.Vendors.Config;
 using OnvifManager.ViewModels;
 using OnvifManager.Views;
 
@@ -41,6 +42,17 @@ public partial class App : Application
         services.AddSingleton<SnapshotService>();
         services.AddSingleton<VideoPlayerService>();
         services.AddSingleton<AppSettingsService>();
+
+        services.AddSingleton<VendorProfileStore>(_ =>
+        {
+            var bundled = Path.Combine(AppContext.BaseDirectory, "Vendors", "Profiles");
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var userDir = Path.Combine(appData, "SeaGull", "vendors");
+            return new VendorProfileStore(new[] { bundled, userDir });
+        });
+        services.AddSingleton<IVendorProtocol, IsapiProtocol>();
+        services.AddSingleton<VendorParameterService>();
+        services.AddSingleton<VendorParametersHostViewModel>();
 
         services.AddSingleton<IPasswordProtector, DpapiPasswordProtector>();
         services.AddSingleton<ICameraStore>(sp =>
