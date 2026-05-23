@@ -21,11 +21,42 @@ public sealed class OnvifClientProvider : IDisposable
     public OnvifClient Get(CameraDevice camera)
     {
         var key = $"{camera.IpAddress}:{camera.Port}|{camera.Username}|{camera.Password}";
-        var http = _clients.GetOrAdd(key, _ => CreateClient(camera));
+        var http = _clients.GetOrAdd(key, _ => CreateClient(camera.Username, camera.Password));
         return new OnvifClient(http, camera);
     }
 
-    private HttpClient CreateClient(CameraDevice camera)
+    // Client for vendor-specific (ISAPI) calls. When the camera carries a separate
+    // web-admin account, those credentials are used (some firmware denies the ONVIF
+    // user ISAPI access); otherwise this is identical to Get. ONVIF SOAP must keep
+    // using Get — the admin account may lack ONVIF service access.
+    public OnvifClient GetVendor(CameraDevice camera)
+    {
+        if (!camera.HasAdminCredentials) return Get(camera);
+
+        var key = $"{camera.IpAddress}:{camera.Port}|{camera.AdminUsername}|{camera.AdminPassword}|vendor";
+        var http = _clients.GetOrAdd(key, _ => CreateClient(camera.AdminUsername, camera.AdminPassword));
+        // The OnvifClient's Camera is used for the digest credentials and to resolve the
+        // vendor profile (by Manufacturer), so hand it a copy carrying the admin creds.
+        return new OnvifClient(http, CloneWithCredentials(camera, camera.AdminUsername, camera.AdminPassword));
+    }
+
+    private static CameraDevice CloneWithCredentials(CameraDevice c, string user, string password) => new()
+    {
+        Id = c.Id,
+        Name = c.Name,
+        Endpoint = c.Endpoint,
+        Port = c.Port,
+        IpAddress = c.IpAddress,
+        Manufacturer = c.Manufacturer,
+        Model = c.Model,
+        FirmwareVersion = c.FirmwareVersion,
+        SerialNumber = c.SerialNumber,
+        HardwareId = c.HardwareId,
+        Username = user,
+        Password = password
+    };
+
+    private HttpClient CreateClient(string username, string password)
     {
         var handler = new HttpClientHandler
         {
@@ -37,8 +68,8 @@ public sealed class OnvifClientProvider : IDisposable
         // cameras). For others (NVR firmware) it silently fails to compute a valid
         // response, in which case OnvifClient.SendRawAsync does a manual Digest
         // retry as a second attempt.
-        if (!string.IsNullOrEmpty(camera.Username))
-            handler.Credentials = new NetworkCredential(camera.Username, camera.Password);
+        if (!string.IsNullOrEmpty(username))
+            handler.Credentials = new NetworkCredential(username, password);
         if (_options.AllowSelfSignedCertificates)
             handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
         return new HttpClient(handler) { Timeout = _options.Timeout };

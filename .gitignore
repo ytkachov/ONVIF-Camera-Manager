@@ -20,6 +20,11 @@ obj/
 # Local-only design references
 mockups/
 
+# Camera diagnostic tool outputs (screenshots, DOM dumps, Chrome profile, raw probes)
+tools/webadmin-out/
+tools/probe-out/
+tools/__pycache__/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -6,7 +6,7 @@ using OnvifManager.Services;
 
 namespace OnvifManager.ViewModels;
 
-public partial class VideoConfigViewModel : ObservableObject, IDisposable
+public partial class VideoConfigViewModel : ConfigEditorViewModel, IDisposable
 {
     private readonly DiscoveryViewModel _discovery;
     private readonly OnvifClientProvider _provider;
@@ -14,6 +14,15 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
     private CameraDevice? _camera;
     private bool _disposed;
     private bool _suppressProfileChange;
+    private bool _useMedia2;
+
+    // Codec is read-only display (the true value, from Media2); the other fields are edits.
+    private static readonly IReadOnlySet<string> Tracked = new HashSet<string>
+    {
+        nameof(Width), nameof(Height), nameof(FrameRateLimit), nameof(BitrateLimit),
+        nameof(EncodingInterval), nameof(GovLength), nameof(H264Profile), nameof(Quality)
+    };
+    protected override IReadOnlySet<string> TrackedProperties => Tracked;
 
     public event Action? StreamProfileChanged;
 
@@ -54,6 +63,8 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
         _camera = _discovery.SelectedCamera;
         if (_camera == null) return;
 
+        using var _track = SuspendTracking();
+        ResetChanges();
         IsLoading = true;
         StatusText = "Loading video configurations...";
 
@@ -65,7 +76,21 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
             var profiles = await mediaService.GetProfilesAsync(ct);
             Profiles = new ObservableCollection<CameraProfile>(profiles);
 
-            var configs = await mediaService.GetAllVideoEncoderConfigurationsAsync(ct);
+            // ONVIF Media1 (ver10) cannot express H265 — it reports H264 for an H265 stream
+            // and its Set rejects H265. Prefer Media2 (ver20) when the device offers it; its
+            // configs carry the real codec and round-trip correctly. Fall back to Media1.
+            List<VideoEncoderConfig> configs;
+            try
+            {
+                configs = await mediaService.GetVideoEncoderConfigurations2Async(ct);
+                _useMedia2 = configs.Count > 0;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { configs = new List<VideoEncoderConfig>(); _useMedia2 = false; }
+
+            if (!_useMedia2)
+                configs = await mediaService.GetAllVideoEncoderConfigurationsAsync(ct);
+
             EncoderConfigs = new ObservableCollection<VideoEncoderConfig>(configs);
 
             if (configs.Count > 0)
@@ -121,7 +146,9 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedEncoderChanged(VideoEncoderConfig? value)
     {
-        if (value != null) LoadEncoderIntoFields(value);
+        if (value == null) return;
+        using var _track = SuspendTracking();
+        LoadEncoderIntoFields(value);
     }
 
     partial void OnSelectedProfileChanged(CameraProfile? value)
@@ -175,8 +202,13 @@ public partial class VideoConfigViewModel : ObservableObject, IDisposable
 
             var client = _provider.Get(_camera);
             var mediaService = new MediaService(client);
-            await mediaService.SetVideoEncoderConfigurationAsync(SelectedEncoder, ct);
+            // Write through the same API we read from (Media2 handles H265; Media1 can't).
+            if (_useMedia2)
+                await mediaService.SetVideoEncoderConfiguration2Async(SelectedEncoder, ct);
+            else
+                await mediaService.SetVideoEncoderConfigurationAsync(SelectedEncoder, ct);
 
+            ResetChanges();
             StatusText = "Configuration saved successfully";
         }
         catch (OperationCanceledException)

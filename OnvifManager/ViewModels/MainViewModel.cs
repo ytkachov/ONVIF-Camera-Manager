@@ -68,23 +68,79 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Discovery.VideoConfigRequested += () => SelectedTab = ParamTab.Video;
         Discovery.NetworkConfigRequested += () => SelectedTab = ParamTab.Network;
         VideoConfig.StreamProfileChanged += OnStreamProfileChanged;
+
+        // The shared "Применить" button is enabled only when the active tab (or, on the
+        // Video tab in Full mode, the vendor params) has unsaved changes.
+        DeviceInfo.ChangesChanged += OnEditableChanged;
+        VideoConfig.ChangesChanged += OnEditableChanged;
+        NetworkConfig.ChangesChanged += OnEditableChanged;
+        Ptz.ChangesChanged += OnEditableChanged;
+        Events.ChangesChanged += OnEditableChanged;
+        VendorHost.PropertyChanged += OnVendorHostPropertyChanged;
     }
 
     public bool IsFullMode
     {
-        get => Settings.ViewMode == AppViewMode.Full;
+        get => Discovery.SelectedCamera?.FullMode ?? false;
         set
         {
-            var mode = value ? AppViewMode.Full : AppViewMode.Onvif;
-            if (Settings.ViewMode == mode) return;
-            Settings.ViewMode = mode;
-            Settings.Save();
+            var cam = Discovery.SelectedCamera;
+            if (cam == null || cam.FullMode == value) return;
+            cam.FullMode = value;
+            Discovery.RequestSave();
             OnPropertyChanged();
-            _ = RefreshVendorParamsAsync();
+            _ = OnViewModeChangedAsync(value);
         }
     }
 
+    private void OnEditableChanged() => ApplyActiveCommand.NotifyCanExecuteChanged();
+
+    private void OnVendorHostPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(VendorParametersHostViewModel.HasChanges))
+            ApplyActiveCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanApplyActive() => SelectedTab switch
+    {
+        ParamTab.Info => DeviceInfo.HasChanges,
+        ParamTab.Video => VideoConfig.HasChanges || (IsFullMode && VendorHost.HasChanges),
+        ParamTab.Network => NetworkConfig.HasChanges,
+        ParamTab.Ptz => Ptz.HasChanges,
+        ParamTab.Events => Events.HasChanges,
+        _ => false
+    };
+
     public bool VendorAvailable => VendorHost.HasProfile(Discovery.SelectedCamera);
+
+    private async Task OnViewModeChangedAsync(bool full)
+    {
+        if (full) EnsureAdminCredentials();
+        await RefreshVendorParamsAsync();
+    }
+
+    // On the first switch to Full mode for a profiled camera, ask for its web-admin
+    // account (vendor ISAPI may be denied to the ONVIF user). Stored encrypted per camera,
+    // so this prompts only once; "Пропустить" leaves the ONVIF user in use.
+    private void EnsureAdminCredentials()
+    {
+        var cam = Discovery.SelectedCamera;
+        if (cam == null || !VendorHost.HasProfile(cam) || cam.HasAdminCredentials) return;
+
+        var dlg = new Views.AdminCredentialsDialog(
+            string.IsNullOrEmpty(cam.Name) ? cam.IpAddress : cam.Name,
+            string.IsNullOrEmpty(cam.AdminUsername) ? cam.Username : cam.AdminUsername)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+        if (dlg.ShowDialog() == true)
+        {
+            cam.AdminUsername = dlg.ResultUsername;
+            cam.AdminPassword = dlg.ResultPassword;
+            Discovery.RequestSave();
+            ReadyText = "Учётные данные веб-админки сохранены";
+        }
+    }
 
     private async Task RefreshVendorParamsAsync()
     {
@@ -100,6 +156,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ConnectionStatus = c?.IsConnected == true ? "● Подключено" : "● Не подключено";
         VideoPlayer.Stop();
         OnPropertyChanged(nameof(VendorAvailable));
+        OnPropertyChanged(nameof(IsFullMode)); // toggle reflects the newly selected camera
+        ApplyActiveCommand.NotifyCanExecuteChanged();
         _ = RefreshVendorParamsAsync();
         if (Settings.AutoPlayOnSelect && c?.IsConnected == true)
             _ = StartStreamAsync();
@@ -347,7 +405,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             SelectedTab = t;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanApplyActive))]
     private async Task ApplyActiveAsync()
     {
         switch (SelectedTab)
@@ -369,7 +427,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 break;
         }
 
-        if (IsFullMode)
+        // In Full mode the Video tab also carries vendor (ISAPI) parameters — committed by
+        // the same button when they have changes.
+        if (SelectedTab == ParamTab.Video && IsFullMode && VendorHost.HasChanges)
         {
             try
             {
@@ -407,6 +467,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     partial void OnSelectedTabChanged(ParamTab value)
     {
         OnPropertyChanged(nameof(SelectedTabIndex));
+        ApplyActiveCommand.NotifyCanExecuteChanged();
     }
 
     public void Dispose()
@@ -415,5 +476,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _disposed = true;
         Discovery.CameraSelected -= OnCameraSelected;
         VideoConfig.StreamProfileChanged -= OnStreamProfileChanged;
+        DeviceInfo.ChangesChanged -= OnEditableChanged;
+        VideoConfig.ChangesChanged -= OnEditableChanged;
+        NetworkConfig.ChangesChanged -= OnEditableChanged;
+        Ptz.ChangesChanged -= OnEditableChanged;
+        Events.ChangesChanged -= OnEditableChanged;
+        VendorHost.PropertyChanged -= OnVendorHostPropertyChanged;
     }
 }

@@ -78,13 +78,16 @@ public sealed class JsonCameraStore : ICameraStore
         Port = c.Port,
         Username = c.Username,
         PasswordCipher = string.IsNullOrEmpty(c.Password) ? null : _protector.Protect(c.Password),
+        AdminUsername = string.IsNullOrEmpty(c.AdminUsername) ? null : c.AdminUsername,
+        AdminPasswordCipher = string.IsNullOrEmpty(c.AdminPassword) ? null : _protector.Protect(c.AdminPassword),
         Endpoint = c.Endpoint,
         Manufacturer = c.Manufacturer,
         Model = c.Model,
         FirmwareVersion = c.FirmwareVersion,
         SerialNumber = c.SerialNumber,
         HardwareId = c.HardwareId,
-        IsManual = c.IsManual
+        IsManual = c.IsManual,
+        FullMode = c.FullMode
     };
 
     private CameraDevice ToDevice(CameraStoreEntry e) => new()
@@ -95,6 +98,8 @@ public sealed class JsonCameraStore : ICameraStore
         Port = e.Port <= 0 ? 80 : e.Port,
         Username = e.Username ?? "admin",
         Password = string.IsNullOrEmpty(e.PasswordCipher) ? string.Empty : SafeUnprotect(e.PasswordCipher),
+        AdminUsername = e.AdminUsername ?? string.Empty,
+        AdminPassword = string.IsNullOrEmpty(e.AdminPasswordCipher) ? string.Empty : SafeUnprotect(e.AdminPasswordCipher),
         Endpoint = e.Endpoint ?? string.Empty,
         Manufacturer = e.Manufacturer ?? string.Empty,
         Model = e.Model ?? string.Empty,
@@ -102,6 +107,7 @@ public sealed class JsonCameraStore : ICameraStore
         SerialNumber = e.SerialNumber ?? string.Empty,
         HardwareId = e.HardwareId ?? string.Empty,
         IsManual = e.IsManual,
+        FullMode = e.FullMode,
         IsDiscovered = !e.IsManual,
         IsConnected = false,
         StatusMessage = string.Empty
@@ -127,6 +133,8 @@ public sealed class JsonCameraStore : ICameraStore
         public int Port { get; set; }
         public string? Username { get; set; }
         public string? PasswordCipher { get; set; }
+        public string? AdminUsername { get; set; }
+        public string? AdminPasswordCipher { get; set; }
         public string? Endpoint { get; set; }
         public string? Manufacturer { get; set; }
         public string? Model { get; set; }
@@ -134,5 +142,6 @@ public sealed class JsonCameraStore : ICameraStore
         public string? SerialNumber { get; set; }
         public string? HardwareId { get; set; }
         public bool IsManual { get; set; }
+        public bool FullMode { get; set; }
     }
 }

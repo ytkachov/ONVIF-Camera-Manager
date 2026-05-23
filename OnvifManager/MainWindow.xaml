@@ -385,13 +385,7 @@
                                     <TextBlock Text="Видео" Margin="0,3,0,0"/>
                                 </StackPanel>
                             </TabItem.Header>
-                            <DockPanel>
-                                <views:VendorSections DockPanel.Dock="Bottom"
-                                    TabKey="Video"
-                                    DataContext="{Binding VendorHost}"
-                                    Visibility="{Binding DataContext.IsFullMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
-                                <views:VideoConfigView DataContext="{Binding VideoConfig}"/>
-                            </DockPanel>
+                            <views:VideoConfigView DataContext="{Binding VideoConfig}"/>
                         </TabItem>
                         <TabItem>
                             <TabItem.Header>

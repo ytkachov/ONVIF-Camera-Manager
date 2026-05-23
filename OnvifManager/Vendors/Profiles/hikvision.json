@@ -5,34 +5,123 @@
   },
   "parameters": [
     {
-      "id": "hik.image.hlc.enabled",
+      "id": "hik.image.color.brightness",
       "tab": "Video",
-      "section": "Изображение — Hikvision",
-      "label": "HLC (компенсация засветки)",
-      "description": "Highlight Compensation — гасит локальные пересветы (фары, прожекторы), затемняя яркие зоны кадра.",
-      "type": "bool",
-      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/HLC" },
-      "valuePath": "enabled",
-      "trueValue": "true",
-      "falseValue": "false"
-    },
-    {
-      "id": "hik.image.hlc.level",
-      "tab": "Video",
-      "section": "Изображение — Hikvision",
-      "label": "Уровень HLC",
-      "description": "Сила компенсации засветки. Действует только при включённом HLC.",
+      "section": "Изображение — коррекция (Hikvision)",
+      "label": "Яркость",
+      "description": "Brightness — общая яркость картинки.",
       "type": "int",
-      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/HLC" },
-      "valuePath": "HLCLevel",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/color" },
+      "valuePath": "brightnessLevel",
       "min": 0,
       "max": 100,
       "step": 1
     },
     {
+      "id": "hik.image.color.contrast",
+      "tab": "Video",
+      "section": "Изображение — коррекция (Hikvision)",
+      "label": "Контраст",
+      "description": "Contrast — разница между светлыми и тёмными участками.",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/color" },
+      "valuePath": "contrastLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    {
+      "id": "hik.image.color.saturation",
+      "tab": "Video",
+      "section": "Изображение — коррекция (Hikvision)",
+      "label": "Насыщенность",
+      "description": "Saturation — интенсивность цвета.",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/color" },
+      "valuePath": "saturationLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    {
+      "id": "hik.image.sharpness.level",
+      "tab": "Video",
+      "section": "Изображение — коррекция (Hikvision)",
+      "label": "Резкость",
+      "description": "Sharpness — подчёркивание контуров. Слишком высокая даёт шум по краям.",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/sharpness" },
+      "valuePath": "SharpnessLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+
+    {
+      "id": "hik.image.powerlinefreq.mode",
+      "tab": "Video",
+      "section": "Изображение — экспозиция и баланс белого (Hikvision)",
+      "label": "Частота сети (антимерцание)",
+      "description": "Power Line Frequency — синхронизация выдержки с сетью для подавления мерцания ламп. В РФ — 50 Гц.",
+      "type": "enum",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/powerLineFrequency" },
+      "valuePath": "powerLineFrequencyMode",
+      "options": [
+        { "value": "50hz", "label": "50 Гц" },
+        { "value": "60hz", "label": "60 Гц" }
+      ]
+    },
+    {
+      "id": "hik.image.whitebalance.style",
+      "tab": "Video",
+      "section": "Изображение — экспозиция и баланс белого (Hikvision)",
+      "label": "Баланс белого",
+      "description": "White Balance — цветовая температура. Auto подстраивается сам; пресеты — под конкретный тип освещения.",
+      "type": "enum",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/whiteBalance" },
+      "valuePath": "WhiteBalanceStyle",
+      "options": [
+        { "value": "auto1", "label": "Авто" },
+        { "value": "locked", "label": "Фиксированный" },
+        { "value": "incandescentlight", "label": "Лампа накаливания" },
+        { "value": "warmlight", "label": "Тёплый свет" },
+        { "value": "naturallight", "label": "Естественный свет" },
+        { "value": "daylightLamp", "label": "Дневной свет" }
+      ]
+    },
+    {
+      "id": "hik.image.ircutfilter.type",
+      "tab": "Video",
+      "section": "Изображение — экспозиция и баланс белого (Hikvision)",
+      "label": "День / Ночь (ИК-фильтр)",
+      "description": "IR Cut Filter — переключение цвет/ч-б и ИК-подсветки. Auto — по освещённости.",
+      "type": "enum",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/IrcutFilter" },
+      "valuePath": "IrcutFilterType",
+      "options": [
+        { "value": "auto", "label": "Авто" },
+        { "value": "day", "label": "День (цвет)" },
+        { "value": "night", "label": "Ночь (ч/б)" },
+        { "value": "schedule", "label": "По расписанию" }
+      ]
+    },
+
+    {
+      "id": "hik.image.blc.enabled",
+      "tab": "Video",
+      "section": "Изображение — подсветка (Hikvision)",
+      "label": "BLC (компенсация контрового света)",
+      "description": "Backlight Compensation — высветляет тёмный объект на ярком фоне (вход против солнца).",
+      "type": "bool",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/BLC" },
+      "valuePath": "enabled",
+      "trueValue": "true",
+      "falseValue": "false"
+    },
+    {
       "id": "hik.image.wdr.mode",
       "tab": "Video",
-      "section": "Изображение — Hikvision",
+      "section": "Изображение — подсветка (Hikvision)",
       "label": "WDR (широкий динамический диапазон)",
       "description": "Wide Dynamic Range — вытягивает детали одновременно в тенях и на свету (контровой свет, окна).",
       "type": "enum",
@@ -46,7 +135,7 @@
     {
       "id": "hik.image.wdr.level",
       "tab": "Video",
-      "section": "Изображение — Hikvision",
+      "section": "Изображение — подсветка (Hikvision)",
       "label": "Уровень WDR",
       "description": "Сила WDR. Действует только при WDR = «Включён».",
       "type": "int",
@@ -57,9 +146,35 @@
       "step": 1
     },
     {
+      "id": "hik.image.hlc.enabled",
+      "tab": "Video",
+      "section": "Изображение — подсветка (Hikvision)",
+      "label": "HLC (компенсация засветки)",
+      "description": "Highlight Compensation — гасит локальные пересветы (фары, прожекторы), затемняя яркие зоны кадра.",
+      "type": "bool",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/HLC" },
+      "valuePath": "enabled",
+      "trueValue": "true",
+      "falseValue": "false"
+    },
+    {
+      "id": "hik.image.hlc.level",
+      "tab": "Video",
+      "section": "Изображение — подсветка (Hikvision)",
+      "label": "Уровень HLC",
+      "description": "Сила компенсации засветки. Действует только при включённом HLC.",
+      "type": "int",
+      "resource": { "protocol": "isapi", "path": "/ISAPI/Image/channels/1/HLC" },
+      "valuePath": "HLCLevel",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+
+    {
       "id": "hik.image.noisereduce.level",
       "tab": "Video",
-      "section": "Изображение — Hikvision",
+      "section": "Изображение — шумоподавление (Hikvision)",
       "label": "Шумоподавление (уровень)",
       "description": "Digital Noise Reduction (общий режим). Выше — меньше шума, но возможен «смаз» движения.",
       "type": "int",

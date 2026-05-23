@@ -3,8 +3,16 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace OnvifManager.ViewModels;
 
-public partial class PtzViewModel : ObservableObject
+public partial class PtzViewModel : ConfigEditorViewModel
 {
+    private static readonly IReadOnlySet<string> Tracked = new HashSet<string>
+    {
+        nameof(PanSpeed), nameof(TiltSpeed), nameof(ZoomSpeed),
+        nameof(Preset1), nameof(Preset2), nameof(Preset3),
+        nameof(PatrolEnabled), nameof(PatrolDelay)
+    };
+    protected override IReadOnlySet<string> TrackedProperties => Tracked;
+
     [ObservableProperty] private string _capabilities = "Pan, Tilt, Zoom, Focus";
     [ObservableProperty] private double _panSpeed = 70;
     [ObservableProperty] private double _tiltSpeed = 70;
@@ -20,8 +28,16 @@ public partial class PtzViewModel : ObservableObject
     [ObservableProperty] private string _statusText = "PTZ (stub) — ONVIF не подключён";
 
     [RelayCommand]
-    private void Apply() => StatusText = "Применено (stub)";
+    private void Apply()
+    {
+        ResetChanges();
+        StatusText = "Применено (stub)";
+    }
 
     [RelayCommand]
-    private void Cancel() => StatusText = "Отменено (stub)";
+    private void Cancel()
+    {
+        ResetChanges();
+        StatusText = "Отменено (stub)";
+    }
 }

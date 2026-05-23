@@ -7,7 +7,7 @@ using OnvifManager.Vendors;
 
 namespace OnvifManager.ViewModels;
 
-public partial class DeviceInfoViewModel : ObservableObject, IDisposable
+public partial class DeviceInfoViewModel : ConfigEditorViewModel, IDisposable
 {
     private readonly DiscoveryViewModel _discovery;
     private readonly OnvifClientProvider _provider;
@@ -15,6 +15,10 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _loadCts;
     private CameraDevice? _camera;
     private bool _disposed;
+
+    // Only the device name is editable here; everything else is read-only info.
+    private static readonly IReadOnlySet<string> Tracked = new HashSet<string> { nameof(Name) };
+    protected override IReadOnlySet<string> TrackedProperties => Tracked;
 
     [ObservableProperty] private string _manufacturer = "";
     [ObservableProperty] private string _model = "";
@@ -62,6 +66,8 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
         _camera = _discovery.SelectedCamera;
         if (_camera == null) return;
 
+        using var _track = SuspendTracking();
+        ResetChanges();
         IsLoading = true;
         StatusText = "Connecting to camera...";
 
@@ -84,7 +90,10 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
 
             try
             {
-                resolvedName = (await adapter.GetFriendlyNameAsync(client, ct))?.Trim() ?? string.Empty;
+                // Friendly name comes over ISAPI — use the vendor client so the admin
+                // account (if set) is used; the ONVIF user may be denied ISAPI on NVRs.
+                var vendorClient = _provider.GetVendor(_camera);
+                resolvedName = (await adapter.GetFriendlyNameAsync(vendorClient, ct))?.Trim() ?? string.Empty;
             }
             catch (OperationCanceledException) { throw; }
             catch { }
@@ -175,7 +184,7 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             var adapter = _vendors.For(_camera);
             try
             {
-                await adapter.SetFriendlyNameAsync(client, newName, ct);
+                await adapter.SetFriendlyNameAsync(_provider.GetVendor(_camera), newName, ct);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -186,6 +195,7 @@ public partial class DeviceInfoViewModel : ObservableObject, IDisposable
             await deviceService.SetDeviceNameAsync(newName, ct);
 
             _camera.Name = newName;
+            ResetChanges();
             StatusText = "Имя сохранено";
 
             var idx = _discovery.Cameras.IndexOf(_camera);

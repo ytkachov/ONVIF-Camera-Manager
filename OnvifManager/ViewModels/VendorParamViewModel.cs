@@ -30,6 +30,9 @@ public partial class VendorParamViewModel : ObservableObject
 
     public ObservableCollection<VendorEnumOption>? Options { get; }
 
+    // Raised after any edit so the host can recompute its aggregate dirty state.
+    public event Action? Changed;
+
     public bool BoolValue
     {
         get => string.Equals(_value.RawValue, _value.Descriptor.TrueValue, StringComparison.OrdinalIgnoreCase);
@@ -99,5 +102,6 @@ public partial class VendorParamViewModel : ObservableObject
         OnPropertyChanged(name);
         OnPropertyChanged(nameof(DisplayValue));
         OnPropertyChanged(nameof(Tooltip));
+        Changed?.Invoke();
     }
 }

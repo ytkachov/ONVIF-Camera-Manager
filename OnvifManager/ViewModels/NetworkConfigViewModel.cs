@@ -6,13 +6,20 @@ using OnvifManager.Services;
 
 namespace OnvifManager.ViewModels;
 
-public partial class NetworkConfigViewModel : ObservableObject, IDisposable
+public partial class NetworkConfigViewModel : ConfigEditorViewModel, IDisposable
 {
     private readonly DiscoveryViewModel _discovery;
     private readonly OnvifClientProvider _provider;
     private CancellationTokenSource? _loadCts;
     private CameraDevice? _camera;
     private bool _disposed;
+
+    private static readonly IReadOnlySet<string> Tracked = new HashSet<string>
+    {
+        nameof(Enabled), nameof(IPv4Enabled), nameof(IPv4Dhcp),
+        nameof(IPv4Address), nameof(IPv4PrefixLength), nameof(Mtu)
+    };
+    protected override IReadOnlySet<string> TrackedProperties => Tracked;
 
     [ObservableProperty] private ObservableCollection<NetworkInterfaceInfo> _interfaces = new();
     [ObservableProperty] private NetworkInterfaceInfo? _selectedInterface;
@@ -50,6 +57,8 @@ public partial class NetworkConfigViewModel : ObservableObject, IDisposable
         _camera = _discovery.SelectedCamera;
         if (_camera == null) return;
 
+        using var _track = SuspendTracking();
+        ResetChanges();
         IsLoading = true;
         StatusText = "Loading network configuration...";
 
@@ -115,7 +124,9 @@ public partial class NetworkConfigViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedInterfaceChanged(NetworkInterfaceInfo? value)
     {
-        if (value != null) LoadInterfaceIntoFields(value);
+        if (value == null) return;
+        using var _track = SuspendTracking();
+        LoadInterfaceIntoFields(value);
     }
 
     [RelayCommand]
@@ -144,6 +155,7 @@ public partial class NetworkConfigViewModel : ObservableObject, IDisposable
             var deviceService = new DeviceService(client);
             await deviceService.SetNetworkInterfacesAsync(SelectedInterface, ct);
 
+            ResetChanges();
             StatusText = "Network configuration saved successfully";
         }
         catch (OperationCanceledException)

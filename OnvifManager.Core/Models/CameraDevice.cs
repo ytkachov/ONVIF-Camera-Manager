@@ -49,6 +49,21 @@ public partial class CameraDevice : ObservableObject
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     [ObservableProperty] private string _password = string.Empty;
 
+    // Optional web-admin account, distinct from the ONVIF user above. On some firmware
+    // (notably Hikvision NVRs) the ONVIF user is denied ISAPI access while the admin
+    // account is not, so vendor-specific (ISAPI) calls use these when present; ONVIF SOAP
+    // keeps using Username/Password. Entered when the user switches to Full parameter mode.
+    [ObservableProperty] private string _adminUsername = string.Empty;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    [ObservableProperty] private string _adminPassword = string.Empty;
+
+    public bool HasAdminCredentials => !string.IsNullOrEmpty(AdminUsername);
+
+    // Whether this camera shows the full (ONVIF + vendor) parameter set. Per-camera and
+    // persisted, so the "Режим" toggle reflects the selected camera, not a global setting.
+    [ObservableProperty] private bool _fullMode;
+
     [ObservableProperty] private List<CameraProfile> _profiles = new();
     [ObservableProperty] private List<OnvifServiceUri> _services = new();
     [ObservableProperty] private bool _isDiscovered;

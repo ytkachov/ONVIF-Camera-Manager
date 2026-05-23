@@ -21,6 +21,7 @@ public static class OnvifXml
     public const string OnvifSchema = "http://www.onvif.org/ver10/schema";
     public const string OnvifDevice = "http://www.onvif.org/ver10/device/wsdl";
     public const string OnvifMedia = "http://www.onvif.org/ver10/media/wsdl";
+    public const string OnvifMedia2 = "http://www.onvif.org/ver20/media/wsdl";
     public const string OnvifImaging = "http://www.onvif.org/ver10/imaging/wsdl";
     public const string OnvifDiscovery = "http://www.onvif.org/ver10/network/wsdl";
 
@@ -31,6 +32,7 @@ public static class OnvifXml
     public static readonly XNamespace WsuNs = Wsu;
     public static readonly XNamespace Ttds = OnvifDevice;
     public static readonly XNamespace Ttrt = OnvifMedia;
+    public static readonly XNamespace Ttr2 = OnvifMedia2;
     public static readonly XNamespace Tt = OnvifSchema;
     public static readonly XNamespace Timg = OnvifImaging;
     public static readonly XNamespace Dn = OnvifDiscovery;
@@ -42,6 +44,7 @@ public static class OnvifXml
     // Service paths
     public const string DeviceServicePath = "/onvif/device_service";
     public const string MediaServicePath = "/onvif/media_service";
+    public const string Media2ServicePath = "/onvif/Media2";
     public const string ImagingServicePath = "/onvif/imaging_service";
 
     public static string GetProbeMessage(string messageId)

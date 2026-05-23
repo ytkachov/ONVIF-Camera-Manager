@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:views="clr-namespace:OnvifManager.Views"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="340">
 
@@ -28,7 +29,8 @@
                     <TextBlock Text="Профиль" Style="{StaticResource FormLabel}"/>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Profiles}"
                               SelectedItem="{Binding SelectedProfile}"
-                              DisplayMemberPath="Name"/>
+                              DisplayMemberPath="Name"
+                              ToolTip="Медиа-профиль ONVIF — именованный набор настроек потока (видео/аудио/метаданные). Камеры обычно отдают main и sub поток."/>
                 </Grid>
 
                 <Grid>
@@ -39,7 +41,8 @@
                     <TextBlock Text="Энкодер" Style="{StaticResource FormLabel}"/>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding EncoderConfigs}"
                               SelectedItem="{Binding SelectedEncoder}"
-                              DisplayMemberPath="Name"/>
+                              DisplayMemberPath="Name"
+                              ToolTip="Конфигурация видеокодера (разрешение, битрейт, кодек), привязанная к профилю."/>
                 </Grid>
             </StackPanel>
 
@@ -54,12 +57,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Кодек" Style="{StaticResource FormLabel}"/>
-                    <ComboBox Grid.Column="1" Text="{Binding Encoding}" IsEditable="True">
-                        <ComboBoxItem Content="H264"/>
-                        <ComboBoxItem Content="H265"/>
-                        <ComboBoxItem Content="JPEG"/>
-                        <ComboBoxItem Content="MPEG4"/>
-                    </ComboBox>
+                    <TextBox Grid.Column="1" Text="{Binding Encoding}" IsReadOnly="True"
+                             ToolTip="Алгоритм сжатия видео (только чтение). H.265 (HEVC) даёт ту же картинку при меньшем битрейте, чем H.264. Реальный кодек берётся из ONVIF Media2."/>
                 </Grid>
 
                 <Grid Margin="0,0,0,8">
@@ -68,7 +67,9 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="H.264 Profile" Style="{StaticResource FormLabel}"/>
-                    <ComboBox Grid.Column="1" Text="{Binding H264Profile}" IsEditable="True">
+                    <ComboBox Grid.Column="1" Text="{Binding H264Profile}" IsEditable="True"
+                              ToolTip="Профиль кодирования H.264: Baseline (макс. совместимость) → Main → High (лучшее сжатие, выше нагрузка).">
+
                         <ComboBoxItem Content="Baseline"/>
                         <ComboBoxItem Content="Main"/>
                         <ComboBoxItem Content="High"/>
@@ -81,7 +82,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="GOV Length" Style="{StaticResource FormLabel}"/>
-                    <TextBox Grid.Column="1" Text="{Binding GovLength}"/>
+                    <TextBox Grid.Column="1" Text="{Binding GovLength}"
+                             ToolTip="Длина GOP — интервал между ключевыми (I) кадрами. Больше = меньше битрейт, но дольше восстановление картинки при потерях."/>
                 </Grid>
 
                 <Grid Margin="0,0,0,8">
@@ -99,7 +101,9 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Тип битрейта" Style="{StaticResource FormLabel}"/>
-                    <ComboBox Grid.Column="1" SelectedIndex="{Binding Quality}">
+                    <ComboBox Grid.Column="1" SelectedIndex="{Binding Quality}"
+                              ToolTip="CBR — постоянный битрейт (предсказуемый трафик); VBR — переменный (экономит на статичной сцене); CQ — постоянное качество.">
+
                         <ComboBoxItem Content="CBR (постоянный)"/>
                         <ComboBoxItem Content="VBR (переменный)"/>
                         <ComboBoxItem Content="CQ (постоянное качество)"/>
@@ -139,7 +143,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Enc. interval" Style="{StaticResource FormLabel}"/>
-                    <TextBox Grid.Column="1" Text="{Binding EncodingInterval}"/>
+                    <TextBox Grid.Column="1" Text="{Binding EncodingInterval}"
+                             ToolTip="Encoding interval — кодируется каждый N-й кадр (1 = все кадры, 2 = каждый второй и т.д.). Снижает FPS потока."/>
                 </Grid>
 
                 <Grid>
@@ -152,6 +157,12 @@
                              TextWrapping="NoWrap"/>
                 </Grid>
             </StackPanel>
+
+            <!-- Vendor-specific parameters (config-driven) — shown only in Full mode,
+                 scrolls together with the standard parameters above. -->
+            <views:VendorSections TabKey="Video"
+                DataContext="{Binding DataContext.VendorHost, RelativeSource={RelativeSource AncestorType=Window}}"
+                Visibility="{Binding DataContext.IsFullMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
 
             <TextBlock Text="{Binding StatusText}"
                        Style="{StaticResource Muted}" FontSize="11"

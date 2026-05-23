@@ -104,6 +104,10 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
         ScheduleSave();
     }
 
+    // Persist a property change on an existing camera (e.g. admin credentials added via
+    // the Full-mode prompt) — CollectionChanged doesn't fire for in-place edits.
+    public void RequestSave() => ScheduleSave();
+
     private void ScheduleSave()
     {
         if (_store is null || _disposed) return;
@@ -425,7 +429,8 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
             await deviceService.GetDeviceInformationAsync(probeCts.Token).ConfigureAwait(false);
 
             var adapter = _vendors.For(cam);
-            var friendly = await adapter.GetFriendlyNameAsync(client, probeCts.Token).ConfigureAwait(false);
+            var friendly = await adapter.GetFriendlyNameAsync(
+                _provider.GetVendor(cam), probeCts.Token).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(friendly))
             {

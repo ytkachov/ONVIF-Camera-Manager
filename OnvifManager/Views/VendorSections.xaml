@@ -85,19 +85,19 @@
                                            StringTemplate="{StaticResource VendorStringTemplate}"/>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="280" Padding="14,10,14,4">
-        <ItemsControl x:Name="SectionsHost">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="0,0,0,14">
-                        <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitle}"/>
-                        <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1"
-                                Margin="0,0,0,10"/>
-                        <ItemsControl ItemsSource="{Binding Parameters}"
-                                      ItemTemplateSelector="{StaticResource VendorParamSelector}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </ScrollViewer>
+    <!-- No own ScrollViewer: this control is embedded inside a tab's ScrollViewer so the
+         vendor sections scroll together with the standard ONVIF parameters. -->
+    <ItemsControl x:Name="SectionsHost">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Margin="0,0,0,14">
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitle}"/>
+                    <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1"
+                            Margin="0,0,0,10"/>
+                    <ItemsControl ItemsSource="{Binding Parameters}"
+                                  ItemTemplateSelector="{StaticResource VendorParamSelector}"/>
+                </StackPanel>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
 </UserControl>

@@ -14,6 +14,10 @@ public class VideoEncoderConfig
     public string GovLength { get; set; } = "30";
     public string H264Profile { get; set; } = "High";
     public VideoQualityType Quality { get; set; } = VideoQualityType.ConstantBitrate;
+
+    // Populated from ONVIF Media2 (ver20) so an H265 config round-trips correctly.
+    public bool ConstantBitRate { get; set; }
+    public double QualityLevel { get; set; } = 3;
 }
 
 public enum VideoQualityType

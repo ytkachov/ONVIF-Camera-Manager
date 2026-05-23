@@ -26,6 +26,11 @@ public partial class App : Application
         splash.StartProgress(SplashMinDuration);
         var splashShownAt = DateTime.UtcNow;
 
+        // Defer heavy initialization (DI graph, LibVLC native init) to a Background
+        // dispatcher slot so the splash paints first and its progress bar animates,
+        // instead of the UI thread freezing on startup work right after StartProgress.
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
         var services = new ServiceCollection();
 
         services.AddSingleton(new OnvifClientOptions
@@ -82,6 +87,7 @@ public partial class App : Application
             _serviceProvider.GetRequiredService<DiscoveryViewModel>().StartBackgroundProbeOfSaved();
         };
         mainWindow.Show();
+        }), System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private static void CloseSplash(SplashWindow splash, DateTime shownAt)

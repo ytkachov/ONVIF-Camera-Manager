@@ -63,6 +63,86 @@ public class MediaService
         return configs;
     }
 
+    // ONVIF Media2 (ver20) — needed because Media1's Encoding enum has no H265: ver10
+    // reports H264 for an H265 stream, and its Set rejects H265. Media2 carries the real
+    // codec (and GovLength/Profile/RateControl as on the wire), so when it's available we
+    // read and write encoder configs through it instead.
+    public async Task<List<VideoEncoderConfig>> GetVideoEncoderConfigurations2Async(CancellationToken ct = default)
+    {
+        var configs = new List<VideoEncoderConfig>();
+        var body = new XElement(OnvifXml.Ttr2 + "GetVideoEncoderConfigurations");
+
+        var doc = await _client.SendSoapAsync(OnvifXml.Media2ServicePath,
+            "http://www.onvif.org/ver20/media/wsdl/GetVideoEncoderConfigurations", body, ct);
+
+        var response = SoapMessageParser.ParseBody(doc)
+            .Elements().FirstOrDefault(e => e.Name.LocalName == "GetVideoEncoderConfigurationsResponse");
+        if (response == null) return configs;
+
+        foreach (var cfg in response.Elements().Where(e => e.Name.LocalName == "Configurations"))
+            configs.Add(ReadEncoderConfig2(cfg));
+
+        return configs;
+    }
+
+    public async Task SetVideoEncoderConfiguration2Async(VideoEncoderConfig config, CancellationToken ct = default)
+    {
+        var configuration = new XElement(OnvifXml.Ttr2 + "Configuration",
+            new XAttribute("token", config.Token),
+            new XElement(OnvifXml.Tt + "Name", config.Name),
+            new XElement(OnvifXml.Tt + "UseCount", config.UseCount),
+            new XElement(OnvifXml.Tt + "Encoding", config.Encoding),
+            new XElement(OnvifXml.Tt + "Resolution",
+                new XElement(OnvifXml.Tt + "Width", config.Width),
+                new XElement(OnvifXml.Tt + "Height", config.Height)),
+            new XElement(OnvifXml.Tt + "RateControl",
+                new XAttribute("ConstantBitRate", config.ConstantBitRate ? "true" : "false"),
+                new XElement(OnvifXml.Tt + "FrameRateLimit", config.FrameRateLimit),
+                new XElement(OnvifXml.Tt + "BitrateLimit", config.BitrateLimit)),
+            new XElement(OnvifXml.Tt + "Quality", config.QualityLevel));
+
+        if (int.TryParse(config.GovLength, out var gov))
+            configuration.SetAttributeValue("GovLength", gov);
+        if (!string.IsNullOrEmpty(config.H264Profile))
+            configuration.SetAttributeValue("Profile", config.H264Profile);
+
+        var bodyEl = new XElement(OnvifXml.Ttr2 + "SetVideoEncoderConfiguration", configuration);
+
+        await _client.SendSoapAsync(OnvifXml.Media2ServicePath,
+            "http://www.onvif.org/ver20/media/wsdl/SetVideoEncoderConfiguration", bodyEl, ct);
+    }
+
+    private static VideoEncoderConfig ReadEncoderConfig2(XElement cfg)
+    {
+        var config = new VideoEncoderConfig
+        {
+            Token = cfg.Attribute("token")?.Value ?? "",
+            Name = LocalValue(cfg, "Name"),
+            Encoding = string.IsNullOrEmpty(LocalValue(cfg, "Encoding")) ? "H264" : LocalValue(cfg, "Encoding"),
+            UseCount = ParseInt(LocalValue(cfg, "UseCount"), 0),
+            GovLength = string.IsNullOrEmpty(cfg.Attribute("GovLength")?.Value) ? "30" : cfg.Attribute("GovLength")!.Value,
+            H264Profile = cfg.Attribute("Profile")?.Value ?? ""
+        };
+
+        var resolution = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "Resolution");
+        if (resolution != null)
+        {
+            config.Width = ParseInt(LocalValue(resolution, "Width"), 1920);
+            config.Height = ParseInt(LocalValue(resolution, "Height"), 1080);
+        }
+
+        var rateControl = cfg.Elements().FirstOrDefault(e => e.Name.LocalName == "RateControl");
+        if (rateControl != null)
+        {
+            config.ConstantBitRate = bool.TryParse(rateControl.Attribute("ConstantBitRate")?.Value, out var cbr) && cbr;
+            config.FrameRateLimit = (int)Math.Round(ParseDouble(LocalValue(rateControl, "FrameRateLimit"), 30));
+            config.BitrateLimit = ParseInt(LocalValue(rateControl, "BitrateLimit"), 4096);
+        }
+
+        config.QualityLevel = ParseDouble(LocalValue(cfg, "Quality"), 3);
+        return config;
+    }
+
     public async Task SetVideoEncoderConfigurationAsync(VideoEncoderConfig config, CancellationToken ct = default)
     {
         var quality = config.Quality switch
@@ -181,6 +261,10 @@ public class MediaService
 
     private static int ParseInt(string? val, int def) =>
         int.TryParse(val, out var r) ? r : def;
+
+    private static double ParseDouble(string? val, double def) =>
+        double.TryParse(val, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var r) ? r : def;
 
     private static bool ParseBool(string? val, bool def) =>
         bool.TryParse(val, out var r) ? r : def;

@@ -28,7 +28,8 @@
                     <TextBlock Text="Интерфейс" Style="{StaticResource FormLabel}"/>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Interfaces}"
                               SelectedItem="{Binding SelectedInterface}"
-                              DisplayMemberPath="Display"/>
+                              DisplayMemberPath="Display"
+                              ToolTip="Сетевой интерфейс камеры (обычно один — eth0)."/>
                 </Grid>
             </StackPanel>
 
@@ -63,7 +64,8 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Префикс" Style="{StaticResource FormLabel}"/>
                     <TextBox Grid.Column="1" Text="{Binding IPv4PrefixLength}"
-                             IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"/>
+                             IsEnabled="{Binding IPv4Dhcp, Converter={StaticResource InverseBool}}"
+                             ToolTip="Длина маски подсети в битах: 24 = 255.255.255.0, 16 = 255.255.0.0. Доступно только при выключенном DHCP."/>
                 </Grid>
             </StackPanel>
 
@@ -86,7 +88,8 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="MTU" Style="{StaticResource FormLabel}"/>
-                    <TextBox Grid.Column="1" Text="{Binding Mtu}"/>
+                    <TextBox Grid.Column="1" Text="{Binding Mtu}"
+                             ToolTip="Maximum Transmission Unit — макс. размер сетевого кадра в байтах. Стандарт для Ethernet — 1500."/>
                 </Grid>
             </StackPanel>
 
