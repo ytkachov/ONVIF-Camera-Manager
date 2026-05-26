@@ -113,3 +113,8 @@ The unit runs as `ytkachov` with the `docker` supplementary group, so it
 can talk to the docker socket without sudo. Stop or pause auto-deploy
 with `sudo systemctl stop onvif-deploy.timer` (use `disable` to make it
 permanent).
+
+When nothing on `origin/master` has moved, the tick exits silently in
+~2 s. When new commits arrive, the script pulls and runs
+`docker compose up -d --build`; with a warm BuildKit cache, a no-source
+change (docs only) finishes in well under a minute.
