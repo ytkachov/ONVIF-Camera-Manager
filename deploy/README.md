@@ -84,3 +84,29 @@ The browser hits `http://localhost:5173` and Vite forwards API calls to the
 The MediaMTX container starts with an empty `paths:` map. No streaming
 actually happens yet - real RTSP-to-WebRTC wiring lands in M4. M0 just
 verifies the build pipeline and that both processes come up healthy.
+
+## Auto-deploy
+
+A systemd `--user` timer polls `origin/master` every minute and rebuilds
+the compose stack when new commits arrive. Install once on the host:
+
+```bash
+git clone https://github.com/ytkachov/ONVIF-Camera-Manager.git ~/onvif-web
+chmod +x ~/onvif-web/deploy/auto-deploy.sh
+
+mkdir -p ~/.config/systemd/user
+cp ~/onvif-web/deploy/onvif-deploy.service ~/.config/systemd/user/
+cp ~/onvif-web/deploy/onvif-deploy.timer   ~/.config/systemd/user/
+
+sudo loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user enable --now onvif-deploy.timer
+```
+
+After that, `git push origin master` ends up live on the host within
+~1 minute. Inspect ticks with:
+
+```bash
+systemctl --user list-timers onvif-deploy.timer
+journalctl --user -u onvif-deploy.service -f
+```
