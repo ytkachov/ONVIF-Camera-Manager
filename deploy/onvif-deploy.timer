@@ -1,0 +1,14 @@
+[Unit]
+Description=Tick auto-deploy every minute
+
+[Timer]
+# First tick 1 min after the user systemd target is reached.
+OnBootSec=1min
+# Re-arm 1 min after the previous run finished (not started) — prevents
+# overlapping rebuilds if a build runs longer than the interval.
+OnUnitInactiveSec=1min
+Unit=onvif-deploy.service
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target
