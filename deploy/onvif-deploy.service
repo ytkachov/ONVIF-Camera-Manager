@@ -1,13 +1,16 @@
 [Unit]
 Description=ONVIF Web auto-deploy (pull + rebuild if origin/master moved)
 After=network-online.target docker.service
-Wants=network-online.target
+Wants=network-online.target docker.service
 
 [Service]
 Type=oneshot
-ExecStart=%h/onvif-web/deploy/auto-deploy.sh
+User=ytkachov
+SupplementaryGroups=docker
+Environment=HOME=/home/ytkachov
+ExecStart=/home/ytkachov/onvif-web/deploy/auto-deploy.sh
 # Avoid overlap if a previous tick is still rebuilding.
 TimeoutStartSec=20min
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

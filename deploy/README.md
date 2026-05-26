@@ -87,26 +87,29 @@ verifies the build pipeline and that both processes come up healthy.
 
 ## Auto-deploy
 
-A systemd `--user` timer polls `origin/master` every minute and rebuilds
-the compose stack when new commits arrive. Install once on the host:
+A system-level systemd timer polls `origin/master` every minute and
+rebuilds the compose stack when new commits arrive. Install once on the
+host (paths inside the unit are hard-coded to `/home/ytkachov`):
 
 ```bash
 git clone https://github.com/ytkachov/ONVIF-Camera-Manager.git ~/onvif-web
 chmod +x ~/onvif-web/deploy/auto-deploy.sh
 
-mkdir -p ~/.config/systemd/user
-cp ~/onvif-web/deploy/onvif-deploy.service ~/.config/systemd/user/
-cp ~/onvif-web/deploy/onvif-deploy.timer   ~/.config/systemd/user/
-
-sudo loginctl enable-linger "$USER"
-systemctl --user daemon-reload
-systemctl --user enable --now onvif-deploy.timer
+sudo cp ~/onvif-web/deploy/onvif-deploy.service /etc/systemd/system/
+sudo cp ~/onvif-web/deploy/onvif-deploy.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now onvif-deploy.timer
 ```
 
 After that, `git push origin master` ends up live on the host within
 ~1 minute. Inspect ticks with:
 
 ```bash
-systemctl --user list-timers onvif-deploy.timer
-journalctl --user -u onvif-deploy.service -f
+systemctl list-timers onvif-deploy.timer
+journalctl -u onvif-deploy.service -f
 ```
+
+The unit runs as `ytkachov` with the `docker` supplementary group, so it
+can talk to the docker socket without sudo. Stop or pause auto-deploy
+with `sudo systemctl stop onvif-deploy.timer` (use `disable` to make it
+permanent).
