@@ -26,12 +26,19 @@ public sealed class DiscoverySessionManager
         int timeoutSeconds,
         string? localIp,
         Func<DiscoveredDeviceDto, Task> onDevice,
-        Func<DiscoverySessionResult, Task> onCompleted)
+        Func<DiscoverySessionResult, Task> onCompleted,
+        string? requestedSessionId = null)
     {
-        var sessionId = Guid.NewGuid().ToString("N");
+        var sessionId = string.IsNullOrEmpty(requestedSessionId)
+            ? Guid.NewGuid().ToString("N")
+            : requestedSessionId;
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds + 2));
         var session = new DiscoverySession(sessionId, DateTime.UtcNow, cts);
-        _sessions[sessionId] = session;
+        if (!_sessions.TryAdd(sessionId, session))
+        {
+            cts.Dispose();
+            throw new InvalidOperationException($"Discovery session '{sessionId}' is already running.");
+        }
 
         // Fire-and-forget worker; the awaiter (controller) returned 202 already.
         // Exceptions are logged here because no caller is around to observe them.

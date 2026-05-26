@@ -17,11 +17,16 @@ async function parseProblem(res: Response): Promise<ProblemDetails | ValidationP
   }
 }
 
-export async function startDiscovery(timeoutSeconds: number): Promise<DiscoveryStartResponse> {
+export async function startDiscovery(
+  timeoutSeconds: number,
+  sessionId?: string,
+): Promise<DiscoveryStartResponse> {
+  const body: Record<string, unknown> = { timeoutSeconds };
+  if (sessionId) body.sessionId = sessionId;
   const res = await fetch('/api/discovery/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ timeoutSeconds }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const problem = await parseProblem(res);

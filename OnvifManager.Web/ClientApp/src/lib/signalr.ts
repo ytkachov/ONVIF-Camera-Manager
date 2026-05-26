@@ -32,8 +32,18 @@ export interface DiscoveryHandle {
   cancel: () => Promise<void>;
 }
 
+// Random 32-hex-char id matching the server regex ^[A-Za-z0-9_-]{8,64}$.
+// crypto.randomUUID() requires a secure context (HTTPS/localhost), which
+// http://<lan-ip>:8080 is not, so we build the id from raw random bytes.
+function generateSessionId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function runDiscovery(opts: RunDiscoveryOptions): Promise<DiscoveryHandle> {
   const connection = createDiscoveryConnection();
+  const sessionId = generateSessionId();
 
   connection.on('DeviceFound', (device: DiscoveredDevice) => {
     opts.onDevice(device);
@@ -70,26 +80,36 @@ export async function runDiscovery(opts: RunDiscoveryOptions): Promise<Discovery
   });
 
   try {
+    // Connect and join the per-session group BEFORE kicking off discovery on
+    // the server: otherwise ProbeMatch responses from cameras in the LAN can
+    // arrive in the milliseconds between POST and JoinSession and broadcast
+    // into an empty group — UI then shows "found N" via the ticker but the
+    // device list stays empty.
     await connection.start();
-    const session = await startDiscovery(opts.timeoutSeconds);
+    await connection.invoke('JoinSession', sessionId);
+
     try {
-      await connection.invoke('JoinSession', session.sessionId);
+      await startDiscovery(opts.timeoutSeconds, sessionId);
     } catch (err) {
-      // JoinSession failed -> try to cancel server-side session and tear down.
-      await cancelDiscovery(session.sessionId).catch(() => undefined);
+      // Start failed -> leave the (now-orphan) group and tear down.
+      try {
+        await connection.invoke('LeaveSession', sessionId);
+      } catch {
+        // Best-effort; LeaveSession is not critical.
+      }
       await stopConnection();
       throw err;
     }
 
     return {
-      sessionId: session.sessionId,
+      sessionId,
       cancel: async () => {
         try {
-          await cancelDiscovery(session.sessionId);
+          await cancelDiscovery(sessionId);
         } finally {
           try {
             if (connection.state === HubConnectionState.Connected) {
-              await connection.invoke('LeaveSession', session.sessionId);
+              await connection.invoke('LeaveSession', sessionId);
             }
           } catch {
             // Best-effort; LeaveSession is not critical.

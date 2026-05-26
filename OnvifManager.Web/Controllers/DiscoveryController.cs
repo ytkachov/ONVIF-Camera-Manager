@@ -35,6 +35,7 @@ public sealed class DiscoveryController : ControllerBase
             return ValidationProblem(nameof(StartDiscoveryRequest.TimeoutSeconds), "Must be between 1 and 60.");
 
         var localIp = string.IsNullOrWhiteSpace(request?.LocalIp) ? null : request!.LocalIp!.Trim();
+        var requestedSessionId = string.IsNullOrWhiteSpace(request?.SessionId) ? null : request!.SessionId!.Trim();
 
         var startedUtc = DateTime.UtcNow;
         var found = 0;
@@ -44,34 +45,49 @@ public sealed class DiscoveryController : ControllerBase
         var tickerCts = new CancellationTokenSource();
 
         string sessionId = string.Empty;
-        sessionId = _sessions.Start(
-            timeoutSeconds: timeout,
-            localIp: localIp,
-            onDevice: async dto =>
-            {
-                Interlocked.Increment(ref found);
-                var group = DiscoveryHub.GroupName(sessionId);
-                await _hub.Clients.Group(group).SendAsync("DeviceFound", dto).ConfigureAwait(false);
-                await _hub.Clients.Group(group).SendAsync(
-                    "DiscoveryProgress",
-                    new { found, elapsedSeconds = (DateTime.UtcNow - startedUtc).TotalSeconds })
-                    .ConfigureAwait(false);
-            },
-            onCompleted: async result =>
-            {
-                tickerCts.Cancel();
-                tickerCts.Dispose();
-                var group = DiscoveryHub.GroupName(sessionId);
-                await _hub.Clients.Group(group).SendAsync("DiscoveryCompleted", new
+        try
+        {
+            sessionId = _sessions.Start(
+                timeoutSeconds: timeout,
+                localIp: localIp,
+                requestedSessionId: requestedSessionId,
+                onDevice: async dto =>
                 {
-                    found = result.Found,
-                    durationSeconds = result.DurationSeconds,
-                    cancelled = result.Cancelled
-                }).ConfigureAwait(false);
-                _logger.LogInformation(
-                    "Discovery session {SessionId} completed (found {Found}, duration {Duration:F2}s, cancelled {Cancelled})",
-                    sessionId, result.Found, result.DurationSeconds, result.Cancelled);
+                    Interlocked.Increment(ref found);
+                    var group = DiscoveryHub.GroupName(sessionId);
+                    await _hub.Clients.Group(group).SendAsync("DeviceFound", dto).ConfigureAwait(false);
+                    await _hub.Clients.Group(group).SendAsync(
+                        "DiscoveryProgress",
+                        new { found, elapsedSeconds = (DateTime.UtcNow - startedUtc).TotalSeconds })
+                        .ConfigureAwait(false);
+                },
+                onCompleted: async result =>
+                {
+                    tickerCts.Cancel();
+                    tickerCts.Dispose();
+                    var group = DiscoveryHub.GroupName(sessionId);
+                    await _hub.Clients.Group(group).SendAsync("DiscoveryCompleted", new
+                    {
+                        found = result.Found,
+                        durationSeconds = result.DurationSeconds,
+                        cancelled = result.Cancelled
+                    }).ConfigureAwait(false);
+                    _logger.LogInformation(
+                        "Discovery session {SessionId} completed (found {Found}, duration {Duration:F2}s, cancelled {Cancelled})",
+                        sessionId, result.Found, result.DurationSeconds, result.Cancelled);
+                });
+        }
+        catch (InvalidOperationException ex)
+        {
+            tickerCts.Cancel();
+            tickerCts.Dispose();
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Discovery session conflict",
+                Detail = ex.Message,
             });
+        }
 
         _ = Task.Run(async () =>
         {
