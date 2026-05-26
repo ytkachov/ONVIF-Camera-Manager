@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnvifManager.Core", "OnvifM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnvifManager.Cli", "OnvifManager.Cli\OnvifManager.Cli.csproj", "{DE7BD2CC-A5A3-48C9-B29F-B454C9734F2C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnvifManager.Web", "OnvifManager.Web\OnvifManager.Web.csproj", "{FB49D5C6-4299-4159-8757-591223351529}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{DE7BD2CC-A5A3-48C9-B29F-B454C9734F2C}.Release|x64.Build.0 = Release|Any CPU
 		{DE7BD2CC-A5A3-48C9-B29F-B454C9734F2C}.Release|x86.ActiveCfg = Release|Any CPU
 		{DE7BD2CC-A5A3-48C9-B29F-B454C9734F2C}.Release|x86.Build.0 = Release|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Debug|x64.Build.0 = Debug|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Debug|x86.Build.0 = Debug|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Release|x64.ActiveCfg = Release|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Release|x64.Build.0 = Release|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Release|x86.ActiveCfg = Release|Any CPU
+		{FB49D5C6-4299-4159-8757-591223351529}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

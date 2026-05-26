@@ -1,0 +1,24 @@
+# Minimal MediaMTX configuration for M0.
+# Real camera paths are pushed dynamically via the control API in M4; for now
+# this file just enables the protocols the app expects to talk to.
+
+logLevel: info
+logDestinations: [stdout]
+
+# Control API used by the backend to add/remove paths at runtime.
+api: yes
+apiAddress: :9997
+
+# Source ingest from cameras (RTSP pull).
+rtsp: yes
+rtspAddress: :8554
+
+# Browser-facing playback.
+hls: yes
+hlsAddress: :8888
+
+webrtc: yes
+webrtcAddress: :8889
+
+# No static paths in M0 — backend will register them on demand.
+paths: {}

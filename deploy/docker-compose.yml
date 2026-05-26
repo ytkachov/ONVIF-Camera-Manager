@@ -1,0 +1,47 @@
+# OnvifManager.Web + MediaMTX sidecar.
+#
+# `network_mode: host` is required so that:
+#   * WS-Discovery multicast (UDP 239.255.255.250:3702) can leave the container
+#     and reach LAN cameras.
+#   * MediaMTX WebRTC ICE candidates are reachable from the browser without
+#     ephemeral-port NAT gymnastics.
+#
+# Trade-off: host networking ONLY works on Linux hosts. On Docker Desktop
+# (Windows / macOS) the container shares the VM's network, not the host's,
+# which breaks both of the above. On Windows-dev use `dotnet run` and `npm
+# run dev` directly — see deploy/README.md.
+#
+# With network_mode: host the `ports:` section is ignored by the engine, so
+# the effective listeners are:
+#   onvif-web : 8080 (HTTP)
+#   mediamtx  : 8554 (RTSP), 8888 (HLS), 8889 (WebRTC/WHEP), 9997 (control API)
+
+services:
+  onvif-web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: onvif-web:latest
+    container_name: onvif-web
+    network_mode: host
+    volumes:
+      - ./data:/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - Storage__DataDirectory=/data
+      - Storage__KeysDirectory=/data/keys
+      - MediaMtx__WhepBaseUrl=http://localhost:8889
+      - MediaMtx__RtspBaseUrl=rtsp://localhost:8554
+      - MediaMtx__ControlApiUrl=http://localhost:9997
+    restart: unless-stopped
+    depends_on:
+      - mediamtx
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: onvif-mediamtx
+    network_mode: host
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    restart: unless-stopped

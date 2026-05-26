@@ -20,7 +20,17 @@ public class DiscoveryService
         _vendors = vendors ?? VendorRegistry.Empty;
     }
 
-    public async Task<List<CameraDevice>> DiscoverAsync(string? localIp = null,
+    public Task<List<CameraDevice>> DiscoverAsync(string? localIp = null,
+        CancellationToken ct = default)
+        => DiscoverAsync(localIp, progress: null, timeoutMs: DiscoveryTimeoutMs, ct);
+
+    // Streaming-friendly overload: each ProbeMatch is reported via `progress`
+    // synchronously while the socket loop runs, so callers (web SignalR hub,
+    // CLI long-listen modes) can react before the whole timeout elapses.
+    public async Task<List<CameraDevice>> DiscoverAsync(
+        string? localIp,
+        IProgress<CameraDevice>? progress,
+        int timeoutMs = DiscoveryTimeoutMs,
         CancellationToken ct = default)
     {
         var cameras = new List<CameraDevice>();
@@ -28,7 +38,7 @@ public class DiscoveryService
 
         using var udp = new UdpClient();
         udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        udp.Client.ReceiveTimeout = DiscoveryTimeoutMs;
+        udp.Client.ReceiveTimeout = timeoutMs;
         udp.Client.Bind(new IPEndPoint(bindAddress, OnvifXml.DiscoveryPort));
 
         if (!string.IsNullOrEmpty(localIp))
@@ -52,7 +62,7 @@ public class DiscoveryService
         await udp.SendAsync(probeBytes, probeBytes.Length, multicastEp);
 
         var startTime = DateTime.UtcNow;
-        while ((DateTime.UtcNow - startTime).TotalMilliseconds < DiscoveryTimeoutMs)
+        while ((DateTime.UtcNow - startTime).TotalMilliseconds < timeoutMs)
         {
             try
             {
@@ -63,6 +73,7 @@ public class DiscoveryService
                     match.IpAddress = result.RemoteEndPoint.Address.ToString();
                     match.IsDiscovered = true;
                     cameras.Add(match);
+                    progress?.Report(match);
                 }
             }
             catch (SocketException) { break; }
