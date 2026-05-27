@@ -74,3 +74,53 @@ export interface DiscoveryStartResponse {
   sessionId: string;
   timeoutSeconds: number;
 }
+
+export interface SystemDateTime {
+  timeZone: string;
+  syncSource: string;
+  utc: string | null;
+  local: string | null;
+  daylightSavings: boolean;
+}
+
+export interface DeviceInfo {
+  manufacturer: string;
+  model: string;
+  firmwareVersion: string;
+  serialNumber: string;
+  hardwareId: string;
+  endpoint: string;
+  time: SystemDateTime | null;
+}
+
+export interface CameraProfile {
+  token: string;
+  name: string;
+  fixed: boolean;
+  videoSourceToken: string;
+  videoEncoderToken: string;
+}
+
+export type VideoQuality = 'ConstantBitrate' | 'VariableBitrate' | 'ConstantQuality';
+
+export interface VideoEncoderConfig {
+  token: string;
+  name: string;
+  encoding: string;
+  useCount: number;
+  width: number;
+  height: number;
+  frameRateLimit: number;
+  bitrateLimit: number;
+  encodingInterval: number;
+  govLength: string;
+  h264Profile: string;
+  quality: VideoQuality;
+}
+
+export type MediaApiVersion = 'media1' | 'media2';
+
+export interface VideoEncoderConfigsResponse {
+  mediaVersion: MediaApiVersion;
+  configurations: VideoEncoderConfig[];
+}

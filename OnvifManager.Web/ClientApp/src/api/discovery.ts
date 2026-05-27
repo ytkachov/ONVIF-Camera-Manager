@@ -1,21 +1,5 @@
-import { ApiError } from './cameras';
-import type {
-  DiscoveryStartResponse,
-  ProblemDetails,
-  ValidationProblemDetails,
-} from './types';
-
-async function parseProblem(res: Response): Promise<ProblemDetails | ValidationProblemDetails> {
-  try {
-    const text = await res.text();
-    if (!text) {
-      return { status: res.status, title: res.statusText };
-    }
-    return JSON.parse(text) as ProblemDetails | ValidationProblemDetails;
-  } catch {
-    return { status: res.status, title: res.statusText };
-  }
-}
+import { ApiError, parseProblem } from './client';
+import type { DiscoveryStartResponse } from './types';
 
 export async function startDiscovery(
   timeoutSeconds: number,
