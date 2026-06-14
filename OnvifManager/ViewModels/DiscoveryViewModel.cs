@@ -26,6 +26,9 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     private const int SaveDebounceMs = 300;
     private const int ProbeMaxParallel = 5;
     private const int ProbeTimeoutMs = 8000;
+    private const int RebootReconnectInitialDelayMs = 90_000;
+    private const int RebootReconnectRetryMs = 10_000;
+    private const int RebootReconnectMaxAttempts = 18;
 
     private readonly DiscoveryService _discoveryService;
     private readonly OnvifClientProvider _provider;
@@ -34,6 +37,8 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _scanCts;
     private CancellationTokenSource? _saveDebounceCts;
     private CancellationTokenSource? _initCts;
+    private CancellationTokenSource? _reconnectCts;
+    private readonly HashSet<CameraDevice> _reconnecting = new();
     private readonly SemaphoreSlim _saveLock = new(1, 1);
     private bool _disposed;
     private int _autosaveSuspended;
@@ -59,6 +64,7 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     public event Action? VideoConfigRequested;
     public event Action? NetworkConfigRequested;
     public event Action? AddManualRequested;
+    public event Action? SearchRequested;
 
     public DiscoveryViewModel(DiscoveryService discoveryService, OnvifClientProvider provider)
         : this(discoveryService, provider, VendorRegistry.Empty, store: null) { }
@@ -275,6 +281,12 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenAddManual() => AddManualRequested?.Invoke();
 
+    [RelayCommand]
+    private void OpenSearch() => SearchRequested?.Invoke();
+
+    public SearchCamerasViewModel CreateSearchViewModel() =>
+        new(_discoveryService, _provider, _vendors, this);
+
     public async Task<bool> TryAddManualAsync(CancellationToken ct = default)
     {
         LastProbeError = "";
@@ -461,6 +473,79 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
         }
     }
 
+    public void StartReconnectAfterReboot(CameraDevice cam)
+    {
+        if (_disposed || cam == null) return;
+        lock (_reconnecting)
+        {
+            if (!_reconnecting.Add(cam)) return;
+        }
+
+        _reconnectCts ??= new CancellationTokenSource();
+        var ct = _reconnectCts.Token;
+        _ = Task.Run(() => ReconnectAfterRebootAsync(cam, ct), ct);
+    }
+
+    private async Task ReconnectAfterRebootAsync(CameraDevice cam, CancellationToken ct)
+    {
+        try
+        {
+            UpdateCamera(cam, connected: false, status: "Reconnecting after reboot…");
+            await Task.Delay(RebootReconnectInitialDelayMs, ct).ConfigureAwait(false);
+
+            for (var attempt = 1; attempt <= RebootReconnectMaxAttempts; attempt++)
+            {
+                if (await TryReachAsync(cam, ct).ConfigureAwait(false))
+                {
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                        StatusText = $"Камера «{DisplayName(cam)}» снова на связи");
+                    return;
+                }
+
+                if (attempt < RebootReconnectMaxAttempts)
+                    await Task.Delay(RebootReconnectRetryMs, ct).ConfigureAwait(false);
+            }
+
+            UpdateCamera(cam, connected: false, status: "Reconnect failed");
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+                StatusText = $"Камера «{DisplayName(cam)}» не вернулась после перезагрузки");
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            lock (_reconnecting) _reconnecting.Remove(cam);
+        }
+    }
+
+    private async Task<bool> TryReachAsync(CameraDevice cam, CancellationToken ct)
+    {
+        using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        probeCts.CancelAfter(ProbeTimeoutMs);
+        try
+        {
+            var deviceService = new DeviceService(_provider.Get(cam));
+            await deviceService.GetDeviceInformationAsync(probeCts.Token).ConfigureAwait(false);
+            return true;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void UpdateCamera(CameraDevice cam, bool connected, string status)
+    {
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            cam.IsConnected = connected;
+            cam.StatusMessage = status;
+        });
+    }
+
+    private static string DisplayName(CameraDevice cam) =>
+        string.IsNullOrEmpty(cam.Name) ? cam.IpAddress : cam.Name;
+
     private static bool IsAutoName(string? current, string? manufacturer, string? model)
     {
         if (string.IsNullOrWhiteSpace(current)) return true;
@@ -485,6 +570,9 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
         _initCts?.Cancel();
         _initCts?.Dispose();
         _initCts = null;
+        _reconnectCts?.Cancel();
+        _reconnectCts?.Dispose();
+        _reconnectCts = null;
         _saveDebounceCts?.Cancel();
         _saveDebounceCts?.Dispose();
         _saveDebounceCts = null;

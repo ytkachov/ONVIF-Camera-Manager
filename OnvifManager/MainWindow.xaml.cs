@@ -20,10 +20,12 @@ public partial class MainWindow : Window
         _vm = mainViewModel;
         DataContext = mainViewModel;
         mainViewModel.Discovery.AddManualRequested += OnAddManualRequested;
+        mainViewModel.Discovery.SearchRequested += OnSearchRequested;
         mainViewModel.PropertyChanged += OnVmPropertyChanged;
         Closed += (_, _) =>
         {
             mainViewModel.Discovery.AddManualRequested -= OnAddManualRequested;
+            mainViewModel.Discovery.SearchRequested -= OnSearchRequested;
             mainViewModel.PropertyChanged -= OnVmPropertyChanged;
         };
         StateChanged += (_, _) => UpdateMaxRestoreGlyph();
@@ -55,6 +57,12 @@ public partial class MainWindow : Window
     private void OnAddManualRequested()
     {
         var dlg = new ManualAddDialog(_vm.Discovery) { Owner = this };
+        dlg.ShowDialog();
+    }
+
+    private void OnSearchRequested()
+    {
+        var dlg = new SearchCamerasDialog(_vm.Discovery.CreateSearchViewModel()) { Owner = this };
         dlg.ShowDialog();
     }
 

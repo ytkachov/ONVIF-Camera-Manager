@@ -36,6 +36,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private readonly SnapshotService _snapshot;
     private readonly OnvifClientProvider _provider;
+    private OnvifManager.Models.CameraDevice? _watchedCamera;
     private bool _disposed;
 
     public MainViewModel(
@@ -153,6 +154,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnCameraSelected()
     {
         var c = Discovery.SelectedCamera;
+        WatchSelectedCamera(c);
         ConnectionStatus = c?.IsConnected == true ? "● Подключено" : "● Не подключено";
         VideoPlayer.Stop();
         OnPropertyChanged(nameof(VendorAvailable));
@@ -161,6 +163,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _ = RefreshVendorParamsAsync();
         if (Settings.AutoPlayOnSelect && c?.IsConnected == true)
             _ = StartStreamAsync();
+    }
+
+    // Keep the header status in sync when the selected camera goes online/offline
+    // on its own (e.g. background auto-reconnect after a reboot).
+    private void WatchSelectedCamera(OnvifManager.Models.CameraDevice? c)
+    {
+        if (ReferenceEquals(_watchedCamera, c)) return;
+        if (_watchedCamera != null)
+            _watchedCamera.PropertyChanged -= OnSelectedCameraPropertyChanged;
+        _watchedCamera = c;
+        if (_watchedCamera != null)
+            _watchedCamera.PropertyChanged += OnSelectedCameraPropertyChanged;
+    }
+
+    private void OnSelectedCameraPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(OnvifManager.Models.CameraDevice.IsConnected)) return;
+        if (!ReferenceEquals(sender, Discovery.SelectedCamera)) return;
+        ConnectionStatus = _watchedCamera?.IsConnected == true ? "● Подключено" : "● Не подключено";
     }
 
     private void OnStreamProfileChanged()
@@ -181,7 +202,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private Task ScanAsync() => Discovery.ScanCommand.ExecuteAsync(null);
+    private void OpenSearch() => Discovery.OpenSearchCommand.Execute(null);
 
     [RelayCommand]
     private void AddManual() => Discovery.OpenAddManualCommand.Execute(null);
@@ -359,7 +380,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             camera.StatusMessage = "Reboot requested";
             ConnectionStatus = "● Не подключено";
             Discovery.StatusText = $"Перезагрузка «{name}»: {reply}";
-            ReadyText = "Камера перезагружается";
+            ReadyText = "Камера перезагружается, ждём восстановления связи…";
+            Discovery.StartReconnectAfterReboot(camera);
         }
         catch (Exception ex)
         {
@@ -475,6 +497,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         Discovery.CameraSelected -= OnCameraSelected;
+        if (_watchedCamera != null)
+            _watchedCamera.PropertyChanged -= OnSelectedCameraPropertyChanged;
         VideoConfig.StreamProfileChanged -= OnStreamProfileChanged;
         DeviceInfo.ChangesChanged -= OnEditableChanged;
         VideoConfig.ChangesChanged -= OnEditableChanged;

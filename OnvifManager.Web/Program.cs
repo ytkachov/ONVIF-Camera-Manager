@@ -62,6 +62,7 @@ builder.Services.AddSingleton(new OnvifClientOptions
 builder.Services.AddSingleton<OnvifClientProvider>();
 
 builder.Services.AddSingleton<IVendorAdapter, HikvisionVendorAdapter>();
+builder.Services.AddSingleton<IVendorAdapter, DahuaVendorAdapter>();
 builder.Services.AddSingleton<VendorRegistry>();
 
 builder.Services.AddSingleton<DiscoveryService>();

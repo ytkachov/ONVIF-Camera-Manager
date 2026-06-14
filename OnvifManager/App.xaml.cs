@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,8 @@ namespace OnvifManager;
 public partial class App : Application
 {
     private ServiceProvider _serviceProvider = null!;
+    private SplashWindow? _splash;
+    private Thread? _splashThread;
 
     private static readonly TimeSpan SplashMinDuration = TimeSpan.FromMilliseconds(3000);
 
@@ -21,16 +24,13 @@ public partial class App : Application
         base.OnStartup(e);
         ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-        var splash = new SplashWindow();
-        splash.Show();
-        splash.StartProgress(SplashMinDuration);
         var splashShownAt = DateTime.UtcNow;
+        // The splash runs on its own STA thread with a dedicated Dispatcher, so its progress
+        // bar keeps animating while this (UI) thread builds the DI graph and inits LibVLC.
+        // Running both on one thread froze the bar: the animation clock can't tick while the
+        // thread is blocked in the synchronous startup work.
+        ShowSplashOnOwnThread();
 
-        // Defer heavy initialization (DI graph, LibVLC native init) to a Background
-        // dispatcher slot so the splash paints first and its progress bar animates,
-        // instead of the UI thread freezing on startup work right after StartProgress.
-        Dispatcher.BeginInvoke(new Action(() =>
-        {
         var services = new ServiceCollection();
 
         services.AddSingleton(new OnvifClientOptions
@@ -41,6 +41,7 @@ public partial class App : Application
         services.AddSingleton<OnvifClientProvider>();
 
         services.AddSingleton<IVendorAdapter, HikvisionVendorAdapter>();
+        services.AddSingleton<IVendorAdapter, DahuaVendorAdapter>();
         services.AddSingleton<VendorRegistry>();
 
         services.AddSingleton<DiscoveryService>();
@@ -83,31 +84,55 @@ public partial class App : Application
         MainWindow = mainWindow;
         mainWindow.Loaded += (_, _) =>
         {
-            CloseSplash(splash, splashShownAt);
+            CloseSplash(splashShownAt);
             _serviceProvider.GetRequiredService<DiscoveryViewModel>().StartBackgroundProbeOfSaved();
         };
         mainWindow.Show();
-        }), System.Windows.Threading.DispatcherPriority.Background);
     }
 
-    private static void CloseSplash(SplashWindow splash, DateTime shownAt)
+    private void ShowSplashOnOwnThread()
     {
-        var elapsed = DateTime.UtcNow - shownAt;
-        var remaining = SplashMinDuration - elapsed;
-        if (remaining > TimeSpan.Zero)
+        using var ready = new ManualResetEventSlim(false);
+        _splashThread = new Thread(() =>
         {
-            var timer = new DispatcherTimer { Interval = remaining };
-            timer.Tick += (_, _) =>
+            _splash = new SplashWindow();
+            _splash.Show();
+            _splash.StartProgress(SplashMinDuration);
+            ready.Set();
+            Dispatcher.Run();
+        })
+        {
+            IsBackground = true,
+            Name = "SplashThread"
+        };
+        _splashThread.SetApartmentState(ApartmentState.STA);
+        _splashThread.Start();
+        ready.Wait();
+    }
+
+    private void CloseSplash(DateTime shownAt)
+    {
+        var splash = _splash;
+        if (splash == null) return;
+
+        var remaining = SplashMinDuration - (DateTime.UtcNow - shownAt);
+        var delay = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+
+        // Marshal onto the splash's own dispatcher to close it and stop that thread's loop.
+        splash.Dispatcher.InvokeAsync(() =>
+        {
+            void Finish()
             {
-                timer.Stop();
                 splash.Close();
-            };
+                splash.Dispatcher.InvokeShutdown();
+            }
+
+            if (delay <= TimeSpan.Zero) { Finish(); return; }
+
+            var timer = new DispatcherTimer { Interval = delay };
+            timer.Tick += (_, _) => { timer.Stop(); Finish(); };
             timer.Start();
-        }
-        else
-        {
-            splash.Close();
-        }
+        });
     }
 
     protected override void OnExit(ExitEventArgs e)

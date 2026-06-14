@@ -80,7 +80,7 @@
                         </MenuItem>
                         <MenuItem Header="_Вид"/>
                         <MenuItem Header="_Камеры">
-                            <MenuItem Header="Поиск" Command="{Binding ScanCommand}"/>
+                            <MenuItem Header="Поиск…" Command="{Binding OpenSearchCommand}"/>
                             <MenuItem Header="Добавить вручную…" Command="{Binding AddManualCommand}"/>
                             <Separator/>
                             <MenuItem Header="Перезагрузить камеру…"
@@ -155,8 +155,7 @@
                     </Grid.ColumnDefinitions>
 
                     <Button Style="{StaticResource PrimaryToolbarButton}"
-                            Command="{Binding ScanCommand}"
-                            IsEnabled="{Binding Discovery.IsScanning, Converter={StaticResource InverseBool}}">
+                            Command="{Binding OpenSearchCommand}">
                         <StackPanel Orientation="Horizontal">
                             <Path Width="14" Height="14" Fill="White"
                                   Data="{StaticResource IconSearch}" Stretch="Uniform"/>
