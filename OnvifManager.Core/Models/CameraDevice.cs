@@ -7,7 +7,9 @@ public enum CameraStatus
 {
     Online,
     Warning,
-    Offline
+    Offline,
+    // Online but the user stopped the live stream (list dot turns amber).
+    Stopped
 }
 
 public partial class CameraDevice : ObservableObject
@@ -34,6 +36,11 @@ public partial class CameraDevice : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayLabel))]
     private string _name = string.Empty;
+
+    // Set once the user renames the camera in the manager. Prevents the device-reported
+    // name from overwriting that choice on reload/rediscovery — important for cloud cameras
+    // (IMOU/Lechange) that cannot be renamed locally and would otherwise revert to the old name.
+    [ObservableProperty] private bool _nameIsUserDefined;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayLabel))]
@@ -73,7 +80,15 @@ public partial class CameraDevice : ObservableObject
     [NotifyPropertyChangedFor(nameof(Status))]
     [NotifyPropertyChangedFor(nameof(Protocol))]
     [NotifyPropertyChangedFor(nameof(MetaLine))]
+    [NotifyPropertyChangedFor(nameof(IndicatorState))]
     private bool _isConnected;
+
+    // Runtime-only playback intent (not persisted): cameras default to "showing" on launch.
+    // Set true when the user manually stops the stream, so switching back doesn't auto-restart
+    // it and the list dot turns amber.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndicatorState))]
+    private bool _isStreamStopped;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Status))]
@@ -102,6 +117,11 @@ public partial class CameraDevice : ObservableObject
     public string Protocol => IsConnected ? "ONVIF"
         : Status == CameraStatus.Warning ? "auth required"
         : "offline";
+
+    // List dot: green when online and showing, amber when online but the user stopped the
+    // stream, otherwise the plain connection status (offline/auth-warning).
+    public CameraStatus IndicatorState =>
+        IsConnected && IsStreamStopped ? CameraStatus.Stopped : Status;
 
     public string MetaLine => string.IsNullOrEmpty(IpAddress)
         ? Protocol

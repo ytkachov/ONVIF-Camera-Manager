@@ -108,7 +108,9 @@ public partial class DeviceInfoViewModel : ConfigEditorViewModel, IDisposable
                 catch { }
             }
 
-            if (!string.IsNullOrEmpty(resolvedName))
+            // Honor a name the user set in the manager — don't let the device-reported name
+            // overwrite it (cloud cameras keep reporting the old name after a failed rename).
+            if (!string.IsNullOrEmpty(resolvedName) && !_camera.NameIsUserDefined)
             {
                 _camera.Name = resolvedName;
                 Name = resolvedName;
@@ -194,17 +196,14 @@ public partial class DeviceInfoViewModel : ConfigEditorViewModel, IDisposable
 
             await deviceService.SetDeviceNameAsync(newName, ct);
 
+            // Persist as the manager-side name. The list refreshes via Name's change
+            // notification — no need to churn the collection (which re-triggered LoadAsync
+            // and reverted the field to the device's old name on cameras that ignore renames).
             _camera.Name = newName;
+            _camera.NameIsUserDefined = true;
+            _discovery.RequestSave();
             ResetChanges();
             StatusText = "Имя сохранено";
-
-            var idx = _discovery.Cameras.IndexOf(_camera);
-            if (idx >= 0)
-            {
-                _discovery.Cameras.RemoveAt(idx);
-                _discovery.Cameras.Insert(idx, _camera);
-                _discovery.SelectedCamera = _camera;
-            }
         }
         catch (OperationCanceledException)
         {

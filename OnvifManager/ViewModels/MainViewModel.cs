@@ -161,8 +161,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsFullMode)); // toggle reflects the newly selected camera
         ApplyActiveCommand.NotifyCanExecuteChanged();
         _ = RefreshVendorParamsAsync();
-        if (Settings.AutoPlayOnSelect && c?.IsConnected == true)
-            _ = StartStreamAsync();
+        if (Settings.AutoPlayOnSelect && c?.IsConnected == true && !c.IsStreamStopped)
+            _ = PlayAsync(null);
     }
 
     // Keep the header status in sync when the selected camera goes online/offline
@@ -207,8 +207,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void AddManual() => Discovery.OpenAddManualCommand.Execute(null);
 
+    // OSD Play button and profile-change use the profile the user picked for the current
+    // camera. Auto-play on selection passes null so the token is resolved fresh for the
+    // newly selected camera — VideoConfig.SelectedProfile still holds the PREVIOUS camera's
+    // profile until its async reload finishes, and that stale token broke playback on switch.
     [RelayCommand]
-    private async Task StartStreamAsync()
+    private Task StartStreamAsync()
+    {
+        if (Discovery.SelectedCamera is { } cam) cam.IsStreamStopped = false;
+        return PlayAsync(VideoConfig.SelectedProfile?.Token);
+    }
+
+    private async Task PlayAsync(string? preferredToken)
     {
         var camera = Discovery.SelectedCamera;
         if (camera == null)
@@ -221,8 +231,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             var media = new MediaService(_provider.Get(camera));
-            var profileToken = VideoConfig.SelectedProfile?.Token
-                               ?? camera.Profiles.FirstOrDefault()?.Token;
+            var profileToken = preferredToken ?? camera.Profiles.FirstOrDefault()?.Token;
             if (string.IsNullOrEmpty(profileToken))
             {
                 var profiles = await media.GetProfilesAsync();
@@ -238,6 +247,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Selection may have moved on while we fetched the URI (fast camera switching) —
+        // don't play a stale camera's stream over the current one.
+        if (!ReferenceEquals(Discovery.SelectedCamera, camera)) return;
+
         var recordPath = VideoPlayer.IsRecording
             ? VideoPlayer.CurrentRecordingPath
             : null;
@@ -249,6 +262,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void StopStream()
     {
         VideoPlayer.Stop();
+        if (Discovery.SelectedCamera is { } cam) cam.IsStreamStopped = true;
         ReadyText = "Поток остановлен";
     }
 

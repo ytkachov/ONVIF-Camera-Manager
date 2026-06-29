@@ -247,7 +247,7 @@ public partial class DiscoveryViewModel : ObservableObject, IDisposable
                     if (!string.IsNullOrEmpty(cam.FirmwareVersion)) existing.FirmwareVersion = cam.FirmwareVersion;
                     if (!string.IsNullOrEmpty(cam.SerialNumber)) existing.SerialNumber = cam.SerialNumber;
                     if (!string.IsNullOrEmpty(cam.HardwareId)) existing.HardwareId = cam.HardwareId;
-                    if (!string.IsNullOrEmpty(cam.Name)) existing.Name = cam.Name;
+                    if (!string.IsNullOrEmpty(cam.Name) && !existing.NameIsUserDefined) existing.Name = cam.Name;
                     existing.IsDiscovered = true;
                     updated++;
                 }

@@ -81,7 +81,7 @@
                         <Ellipse Width="8" Height="8"
                                  VerticalAlignment="Center"
                                  Margin="0,0,10,0"
-                                 Fill="{Binding Status, Converter={StaticResource CameraStatusBrush}}"/>
+                                 Fill="{Binding IndicatorState, Converter={StaticResource CameraStatusBrush}}"/>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="{Binding Name}"
                                        FontSize="13" FontWeight="SemiBold"

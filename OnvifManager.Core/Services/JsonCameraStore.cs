@@ -74,6 +74,7 @@ public sealed class JsonCameraStore : ICameraStore
     {
         Id = c.Id,
         Name = c.Name,
+        NameIsUserDefined = c.NameIsUserDefined,
         IpAddress = c.IpAddress,
         Port = c.Port,
         Username = c.Username,
@@ -94,6 +95,7 @@ public sealed class JsonCameraStore : ICameraStore
     {
         Id = string.IsNullOrEmpty(e.Id) ? Guid.NewGuid().ToString("N") : e.Id,
         Name = e.Name ?? string.Empty,
+        NameIsUserDefined = e.NameIsUserDefined,
         IpAddress = e.IpAddress ?? string.Empty,
         Port = e.Port <= 0 ? 80 : e.Port,
         Username = e.Username ?? "admin",
@@ -129,6 +131,7 @@ public sealed class JsonCameraStore : ICameraStore
     {
         public string Id { get; set; } = string.Empty;
         public string? Name { get; set; }
+        public bool NameIsUserDefined { get; set; }
         public string? IpAddress { get; set; }
         public int Port { get; set; }
         public string? Username { get; set; }
